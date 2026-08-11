@@ -45,6 +45,7 @@ class NotificationManager(
         private const val TAG = "NotificationManager"
         private const val CHANNEL_ID = "bitchat_dm_notifications"
         private const val GEOHASH_CHANNEL_ID = "bitchat_geohash_notifications"
+        const val SOS_CHANNEL_ID = "bitchat_sos_notifications"
         private const val GROUP_KEY_DM = "bitchat_dm_group"
         private const val GROUP_KEY_GEOHASH = "bitchat_geohash_group"
         private const val NOTIFICATION_REQUEST_CODE = 1000
@@ -78,6 +79,65 @@ class NotificationManager(
             managers.forEach { it.clearNotificationsForSender(canonicalID) }
             if (managers.isEmpty()) {
                 NotificationManagerCompat.from(context).cancel(canonicalID.hashCode())
+            }
+        }
+
+        fun showSosNotification(
+            context: Context,
+            senderPeerID: String,
+            senderNickname: String,
+            channel: String,
+            locationNote: String
+        ) {
+            try {
+                val notifManager = NotificationManagerCompat.from(context)
+                val sysManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as AndroidNotificationManager
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    val sosChannel = NotificationChannel(
+                        SOS_CHANNEL_ID,
+                        "Emergency SOS Alerts",
+                        AndroidNotificationManager.IMPORTANCE_HIGH
+                    ).apply {
+                        description = "High-priority emergency alerts from festival attendees"
+                        enableVibration(true)
+                        setShowBadge(true)
+                    }
+                    sysManager.createNotificationChannel(sosChannel)
+                }
+
+                val intent = Intent(context, MainActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                }
+                val pendingIntent = PendingIntent.getActivity(
+                    context,
+                    senderPeerID.hashCode(),
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+
+                val notification = NotificationCompat.Builder(context, SOS_CHANNEL_ID)
+                    .setSmallIcon(R.drawable.ic_notification)
+                    .setContentTitle("⚠️ EMERGENCY SOS — $senderNickname in #$channel")
+                    .setContentText("Details: $locationNote")
+                    .setStyle(NotificationCompat.BigTextStyle().bigText("Sender: $senderNickname\nChannel: #$channel\nDetails: $locationNote"))
+                    .setPriority(NotificationCompat.PRIORITY_MAX)
+                    .setCategory(NotificationCompat.CATEGORY_ALARM)
+                    .setAutoCancel(true)
+                    .setContentIntent(pendingIntent)
+                    .build()
+
+                notifManager.notify(senderPeerID.hashCode(), notification)
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to show SOS notification", e)
+            }
+        }
+
+        fun cancelSosNotification(context: Context, senderPeerID: String) {
+            try {
+                val notifManager = NotificationManagerCompat.from(context)
+                notifManager.cancel(senderPeerID.hashCode())
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to cancel SOS notification", e)
             }
         }
     }

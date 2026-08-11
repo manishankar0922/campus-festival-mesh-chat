@@ -14,6 +14,8 @@ interface MeshService {
 
     fun sendMessage(content: String, mentions: List<String> = emptyList(), channel: String? = null)
     fun sendAnnouncement(message: com.bitchat.android.model.BitchatMessage)
+    fun sendSos(locationNote: String, channel: String): String? = null
+    fun sendSosCancel(originalSosId: String, channel: String): String? = null
     fun sendPrivateMessage(content: String, recipientPeerID: String, recipientNickname: String, messageID: String? = null)
     fun sendReadReceipt(messageID: String, recipientPeerID: String, readerNickname: String)
     fun sendDeliveryAck(messageID: String, recipientPeerID: String) {}

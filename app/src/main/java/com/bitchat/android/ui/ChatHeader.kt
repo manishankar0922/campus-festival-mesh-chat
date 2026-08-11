@@ -572,7 +572,8 @@ fun ChatHeaderContent(
     onTripleClick: () -> Unit,
     onShowAppInfo: () -> Unit,
     onLocationChannelsClick: () -> Unit,
-    onLocationNotesClick: () -> Unit
+    onLocationNotesClick: () -> Unit,
+    onSosClick: () -> Unit = {}
 ) {
     when {
         currentChannel != null -> {
@@ -580,7 +581,8 @@ fun ChatHeaderContent(
                 channel = currentChannel,
                 onBackClick = onBackClick,
                 onLeaveChannel = { viewModel.leaveChannel(currentChannel) },
-                onSidebarClick = onSidebarClick
+                onSidebarClick = onSidebarClick,
+                onSosClick = onSosClick
             )
         }
         else -> {
@@ -592,6 +594,7 @@ fun ChatHeaderContent(
                 onSidebarClick = onSidebarClick,
                 onLocationChannelsClick = onLocationChannelsClick,
                 onLocationNotesClick = onLocationNotesClick,
+                onSosClick = onSosClick,
                 viewModel = viewModel
             )
         }
@@ -603,7 +606,8 @@ private fun ChannelHeader(
     channel: String,
     onBackClick: () -> Unit,
     onLeaveChannel: () -> Unit,
-    onSidebarClick: () -> Unit
+    onSidebarClick: () -> Unit,
+    onSosClick: () -> Unit
 ) {
     val colorScheme = MaterialTheme.colorScheme
     ConversationHeader(
@@ -613,6 +617,8 @@ private fun ChannelHeader(
         title = "#$channel",
         onTitleClick = onSidebarClick
     ) {
+        SosHeaderButton(onClick = onSosClick)
+        Spacer(modifier = Modifier.width(4.dp))
         CloseButton(onClick = onBackClick)
     }
 }
@@ -626,6 +632,7 @@ private fun MainHeader(
     onSidebarClick: () -> Unit,
     onLocationChannelsClick: () -> Unit,
     onLocationNotesClick: () -> Unit,
+    onSosClick: () -> Unit,
     viewModel: ChatViewModel
 ) {
     val colorScheme = MaterialTheme.colorScheme
@@ -680,6 +687,8 @@ private fun MainHeader(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(2.dp)
             ) {
+                SosHeaderButton(onClick = onSosClick)
+
                 if (hasUnreadPrivateMessages.isNotEmpty()) {
                     HeaderIconButton(
                         onClick = { viewModel.openLatestUnreadPrivateChat() },
@@ -830,5 +839,37 @@ private fun LocationChannelsButton(
                 modifier = Modifier.widthIn(max = 120.dp)
             )
         }
+    }
+}
+
+@Composable
+fun SosHeaderButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val palette = LocalBitchatPalette.current
+    Button(
+        onClick = onClick,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = palette.accentOrange,
+            contentColor = Color.White
+        ),
+        shape = RoundedCornerShape(8.dp),
+        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+        modifier = modifier.height(32.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Default.Warning,
+            contentDescription = "Send SOS Emergency Alert",
+            modifier = Modifier.size(16.dp),
+            tint = Color.White
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            text = "SOS",
+            fontWeight = FontWeight.Bold,
+            fontSize = 13.sp,
+            color = Color.White
+        )
     }
 }

@@ -90,6 +90,7 @@ fun ChatScreen(viewModel: ChatViewModel) {
     var passwordInput by remember { mutableStateOf("") }
     var showLocationChannelsSheet by remember { mutableStateOf(false) }
     var showLocationNotesSheet by remember { mutableStateOf(false) }
+    var showSosSheet by remember { mutableStateOf(false) }
     var showUserSheet by remember { mutableStateOf(false) }
     var selectedUserForSheet by remember { mutableStateOf("") }
     var selectedMessageForSheet by remember { mutableStateOf<BitchatMessage?>(null) }
@@ -289,6 +290,19 @@ fun ChatScreen(viewModel: ChatViewModel) {
                     }
                 )
         ) {
+          val activeSosEntries = remember(messages) { com.bitchat.android.sos.ActiveSosManager.getAllActiveSos() }
+
+          if (activeSosEntries.isNotEmpty()) {
+              Spacer(modifier = Modifier.height(statusBarHeight + headerHeight))
+              ActiveSosBanner(
+                  activeEntries = activeSosEntries,
+                  myPeerId = viewModel.myPeerID,
+                  onCancelSos = { entry ->
+                      viewModel.meshServiceFacade.sendSosCancel(entry.sosId, entry.channel)
+                  }
+              )
+          }
+
           Box(modifier = Modifier.weight(1f)) {
             // Messages area - takes up available space, will compress when keyboard appears
             // Nearby-notes strip and the reveal hint both live in this Box alongside the
@@ -462,7 +476,8 @@ fun ChatScreen(viewModel: ChatViewModel) {
             onLocationNotesClick = {
                 nearbyNotesController.reveal()
                 showLocationNotesSheet = true
-            }
+            },
+            onSosClick = { showSosSheet = true }
         )
 
         // Scroll-to-bottom floating button
@@ -510,6 +525,14 @@ fun ChatScreen(viewModel: ChatViewModel) {
             imagePaths = viewerImagePaths,
             initialIndex = initialViewerIndex,
             onClose = { showFullScreenImageViewer = false }
+        )
+    }
+
+    if (showSosSheet) {
+        SosConfirmationSheet(
+            currentChannel = currentChannel,
+            meshService = viewModel.meshServiceFacade,
+            onDismiss = { showSosSheet = false }
         )
     }
 
@@ -761,7 +784,8 @@ private fun ChatFloatingHeader(
     onShowAppInfo: () -> Unit,
     onPanicClear: () -> Unit,
     onLocationChannelsClick: () -> Unit,
-    onLocationNotesClick: () -> Unit
+    onLocationNotesClick: () -> Unit,
+    onSosClick: () -> Unit
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val locationManager = remember { com.bitchat.android.geohash.LocationChannelManager.getInstance(context) }
@@ -806,7 +830,8 @@ private fun ChatFloatingHeader(
                 // Ensure location is loaded before showing sheet
                 locationManager.refreshChannels()
                 onLocationNotesClick()
-            }
+            },
+            onSosClick = onSosClick
         )
     }
 }

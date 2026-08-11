@@ -50,32 +50,47 @@ fun OrganizerModeSheet(
             Spacer(modifier = Modifier.height(16.dp))
 
             if (!isAuthenticated) {
+                val isSet = remember { OrganizerIdentityManager.isPasscodeSet() }
+                val labelText = if (isSet) "Enter Passcode" else "Set Local Organizer Passcode"
+                val buttonText = if (isSet) "Authenticate" else "Set Passcode"
+
                 OutlinedTextField(
                     value = passcode,
                     onValueChange = { passcode = it; errorText = "" },
-                    label = { Text("Passcode") },
+                    label = { Text(labelText) },
                     visualTransformation = PasswordVisualTransformation(),
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Button(
                     onClick = {
-                        if (OrganizerIdentityManager.isLockedOut()) {
-                            errorText = "Too many failed attempts. Temporarily locked out."
-                        } else if (OrganizerIdentityManager.validatePasscode(passcode)) {
-                            isAuthenticated = true
-                            errorText = ""
+                        if (!isSet) {
+                            if (passcode.isBlank()) {
+                                errorText = "Passcode cannot be empty"
+                            } else if (OrganizerIdentityManager.setPasscode(passcode)) {
+                                isAuthenticated = true
+                                errorText = ""
+                            } else {
+                                errorText = "Failed to set passcode"
+                            }
                         } else {
                             if (OrganizerIdentityManager.isLockedOut()) {
-                                errorText = "Too many failed attempts. Locked out for 30 seconds."
+                                errorText = "Too many failed attempts. Temporarily locked out."
+                            } else if (OrganizerIdentityManager.validatePasscode(passcode)) {
+                                isAuthenticated = true
+                                errorText = ""
                             } else {
-                                errorText = "Invalid passcode"
+                                if (OrganizerIdentityManager.isLockedOut()) {
+                                    errorText = "Too many failed attempts. Locked out for 30 seconds."
+                                } else {
+                                    errorText = "Invalid passcode"
+                                }
                             }
                         }
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Authenticate")
+                    Text(buttonText)
                 }
             } else {
                 if (!OrganizerIdentityManager.isOrganizerProvisioned()) {

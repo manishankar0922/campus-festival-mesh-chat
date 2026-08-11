@@ -8,6 +8,11 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.Animatable
@@ -565,6 +570,16 @@ fun MessageItem(
         modifier: Modifier = Modifier
     ) {
     val palette = LocalBitchatPalette.current
+
+    // SOS special rendering
+    if (message.type == BitchatMessageType.Sos || message.isSos) {
+        SosMessageCard(
+            message = message,
+            timeFormatter = timeFormatter,
+            modifier = modifier
+        )
+        return
+    }
 
     // Image special rendering
     if (message.type == BitchatMessageType.Image) {
@@ -1339,4 +1354,70 @@ fun DeliveryStatusIcon(status: DeliveryStatus) {
             scaleY = scale.value
         }
     )
+}
+
+@Composable
+fun SosMessageCard(
+    message: BitchatMessage,
+    timeFormatter: SimpleDateFormat,
+    modifier: Modifier = Modifier
+) {
+    val palette = LocalBitchatPalette.current
+    val colorScheme = MaterialTheme.colorScheme
+    val isCancel = message.isSosCancel
+    val containerBg = if (isCancel) colorScheme.surfaceVariant else palette.accentOrange.copy(alpha = 0.15f)
+    val borderClr = if (isCancel) colorScheme.onSurfaceVariant else palette.accentOrange
+    val iconColor = if (isCancel) colorScheme.onSurfaceVariant else palette.accentOrange
+
+    Card(
+        colors = CardDefaults.cardColors(containerColor = containerBg),
+        shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(1.5.dp, borderClr),
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp, horizontal = 8.dp)
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = if (isCancel) Icons.Default.CheckCircle else Icons.Default.Warning,
+                    contentDescription = if (isCancel) "SOS Resolved" else "EMERGENCY SOS",
+                    tint = iconColor,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = if (isCancel) "[ SOS RESOLVED / CANCELLED ]" else "[ ⚠️ EMERGENCY SOS ]",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                    color = iconColor,
+                    fontFamily = BitchatFontFamily
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                Text(
+                    text = timeFormatter.format(message.timestamp),
+                    fontSize = 11.sp,
+                    color = colorScheme.onSurfaceVariant,
+                    fontFamily = BitchatFontFamily
+                )
+            }
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = "From: ${message.sender}${message.channel?.let { " in #$it" } ?: ""}",
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.primary,
+                fontFamily = BitchatFontFamily
+            )
+            message.sosLocationNote?.let { note ->
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Location details: $note",
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontFamily = BitchatFontFamily
+                )
+            }
+        }
+    }
 }

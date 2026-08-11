@@ -103,6 +103,14 @@ class UnifiedMeshService(
         }
     }
 
+    override fun sendSos(locationNote: String, channel: String): String? {
+        return bluetooth.sendSos(locationNote, channel)
+    }
+
+    override fun sendSosCancel(originalSosId: String, channel: String): String? {
+        return bluetooth.sendSosCancel(originalSosId, channel)
+    }
+
     override fun sendPrivateMessage(
         content: String,
         recipientPeerID: String,

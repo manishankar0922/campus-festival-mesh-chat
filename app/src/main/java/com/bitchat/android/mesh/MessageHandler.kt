@@ -441,6 +441,92 @@ class MessageHandler(private val myPeerID: String, private val appContext: andro
         }
     }
 
+    /**
+     * Handle incoming SOS emergency priority alert
+     */
+    suspend fun handleSos(routed: RoutedPacket) {
+        val packet = routed.packet
+        val peerID = routed.peerID ?: "unknown"
+        val payload = com.bitchat.android.sos.SosPayload.decode(packet.payload) ?: run {
+            Log.w(TAG, "Failed to decode SOS payload from $peerID")
+            return
+        }
+
+        val nowMs = System.currentTimeMillis()
+        val entry = com.bitchat.android.sos.ActiveSosEntry(
+            sosId = payload.id,
+            senderPeerId = peerID,
+            senderNickname = payload.sender,
+            channel = payload.channel,
+            locationNote = payload.locationNote,
+            timestampMs = payload.timestamp
+        )
+
+        val isNewActive = com.bitchat.android.sos.ActiveSosManager.processIncomingSos(entry, nowMs)
+        if (!isNewActive) {
+            Log.w(TAG, "Incoming SOS from $peerID is expired or rate-limited")
+            return
+        }
+
+        // Show notification (deduplicated by NotificationManager)
+        delegate?.showSosNotification(
+            senderPeerID = peerID,
+            senderNickname = payload.sender,
+            channel = payload.channel,
+            locationNote = payload.locationNote
+        )
+
+        // Post message to UI feed
+        val message = BitchatMessage(
+            id = payload.id,
+            sender = payload.sender,
+            content = "EMERGENCY SOS: Location details: ${payload.locationNote}",
+            type = com.bitchat.android.model.BitchatMessageType.Sos,
+            timestamp = java.util.Date(payload.timestamp),
+            senderPeerID = peerID,
+            channel = payload.channel,
+            isSos = true,
+            sosLocationNote = payload.locationNote
+        )
+        delegate?.onMessageReceived(message)
+    }
+
+    /**
+     * Handle incoming SOS cancellation
+     */
+    suspend fun handleSosCancel(routed: RoutedPacket) {
+        val packet = routed.packet
+        val peerID = routed.peerID ?: "unknown"
+        val payload = com.bitchat.android.sos.SosPayload.decode(packet.payload) ?: run {
+            Log.w(TAG, "Failed to decode SOS_CANCEL payload from $peerID")
+            return
+        }
+
+        val cancelledEntry = com.bitchat.android.sos.ActiveSosManager.processIncomingCancel(peerID, payload.originalSosId)
+        if (cancelledEntry == null) {
+            Log.w(TAG, "Received SOS_CANCEL from $peerID but no matching active SOS was found")
+            return
+        }
+
+        // Remove notification
+        delegate?.cancelSosNotification(peerID)
+
+        // Post resolution message to UI feed
+        val message = BitchatMessage(
+            id = payload.id,
+            sender = payload.sender,
+            content = "EMERGENCY SOS RESOLVED / CANCELLED",
+            type = com.bitchat.android.model.BitchatMessageType.Sos,
+            timestamp = java.util.Date(payload.timestamp),
+            senderPeerID = peerID,
+            channel = payload.channel,
+            isSos = true,
+            isSosCancel = true,
+            originalSosId = payload.originalSosId
+        )
+        delegate?.onMessageReceived(message)
+    }
+
     /** Validate and ingest an ephemeral public push-to-talk frame. */
     fun handlePublicVoiceFrame(routed: RoutedPacket): Boolean {
         val packet = routed.packet
@@ -469,11 +555,13 @@ class MessageHandler(private val myPeerID: String, private val appContext: andro
         val packet = routed.packet
         val peerID = routed.peerID ?: "unknown"
         
-        // Enforce: only accept public messages from verified peers we know
-        val peerInfo = delegate?.getPeerInfo(peerID)
-        if (peerInfo == null || !peerInfo.isVerifiedNickname) {
-            Log.w(TAG, "Dropping public message from unverified peer ${peerID.take(8)}")
-            return
+        // Enforce: only accept public messages from verified peers we know (exempt official announcements)
+        if (!isOfficial) {
+            val peerInfo = delegate?.getPeerInfo(peerID)
+            if (peerInfo == null || !peerInfo.isVerifiedNickname) {
+                Log.w(TAG, "Dropping public message from unverified peer ${peerID.take(8)}")
+                return
+            }
         }
         
         try {
@@ -485,7 +573,7 @@ class MessageHandler(private val myPeerID: String, private val appContext: andro
                 val savedPath = com.bitchat.android.features.file.FileUtils.saveIncomingFile(appContext, file)
                 val message = BitchatMessage(
                     id = PacketIdUtil.computeIdHex(packet).uppercase(),
-                    sender = delegate?.getPeerNickname(peerID) ?: "unknown",
+                    sender = if (isOfficial) "Official Organizer" else (delegate?.getPeerNickname(peerID) ?: "unknown"),
                     content = savedPath,
                     type = com.bitchat.android.features.file.FileUtils.messageTypeForMime(file.mimeType),
                     senderPeerID = peerID,
@@ -503,7 +591,7 @@ class MessageHandler(private val myPeerID: String, private val appContext: andro
             // Fallback: plain text
             val message = BitchatMessage(
                 id = PacketIdUtil.computeIdHex(packet).uppercase(),
-                sender = delegate?.getPeerNickname(peerID) ?: "unknown",
+                sender = if (isOfficial) "Official Organizer" else (delegate?.getPeerNickname(peerID) ?: "unknown"),
                 content = String(packet.payload, Charsets.UTF_8),
                 senderPeerID = peerID,
                 timestamp = Date(packet.timestamp.toLong()),
@@ -755,4 +843,6 @@ interface MessageHandlerDelegate {
     fun onReadReceiptReceived(messageID: String, peerID: String)
     fun onVerifyChallengeReceived(peerID: String, payload: ByteArray, timestampMs: Long)
     fun onVerifyResponseReceived(peerID: String, payload: ByteArray, timestampMs: Long)
+    fun showSosNotification(senderPeerID: String, senderNickname: String, channel: String, locationNote: String) {}
+    fun cancelSosNotification(senderPeerID: String) {}
 }

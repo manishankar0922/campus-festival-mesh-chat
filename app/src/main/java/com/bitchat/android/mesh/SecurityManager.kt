@@ -73,6 +73,26 @@ class SecurityManager(private val encryptionService: EncryptionService, private 
             }
         }
 
+        if (messageType == MessageType.ANNOUNCEMENT) {
+            if (!com.bitchat.android.organizer.OrganizerIdentityManager.verifyAnnouncement(packet, currentTime)) {
+                Log.w(TAG, "Dropping invalid, forged, or stale/future-dated ANNOUNCEMENT from $peerID")
+                return false
+            }
+        }
+
+        if (messageType == MessageType.SOS || messageType == MessageType.SOS_CANCEL) {
+            val now = currentTime.coerceAtLeast(0).toULong()
+            val clockSkew = if (packet.timestamp >= now) {
+                packet.timestamp - now
+            } else {
+                now - packet.timestamp
+            }
+            if (clockSkew > MESSAGE_TIMEOUT.toULong()) {
+                Log.w(TAG, "Dropping stale or future-dated SOS/SOS_CANCEL from $peerID")
+                return false
+            }
+        }
+
         // Duplicate detection
         val messageID = generateMessageID(packet, peerID)
         
@@ -269,7 +289,9 @@ class SecurityManager(private val encryptionService: EncryptionService, private 
                     MessageType.MESSAGE,
                     MessageType.FILE_TRANSFER,
                     MessageType.VOICE_FRAME,
-                    MessageType.LEAVE
+                    MessageType.LEAVE,
+                    MessageType.SOS,
+                    MessageType.SOS_CANCEL
                 )) {
                 return true
             }

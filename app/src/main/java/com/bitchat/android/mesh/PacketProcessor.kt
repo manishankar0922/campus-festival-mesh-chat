@@ -136,6 +136,8 @@ class PacketProcessor(private val myPeerID: String) {
             MessageType.ANNOUNCE -> validPacket = handleAnnounce(routed)
             MessageType.MESSAGE -> handleMessage(routed)
             MessageType.ANNOUNCEMENT -> handleAnnouncement(routed)
+            MessageType.SOS -> handleSos(routed)
+            MessageType.SOS_CANCEL -> handleSosCancel(routed)
             MessageType.FILE_TRANSFER -> handleMessage(routed) // treat same routing path; parsing happens in handler
             MessageType.VOICE_FRAME -> validPacket = delegate?.handleVoiceFrame(routed) ?: false
             MessageType.LEAVE -> handleLeave(routed)
@@ -202,6 +204,14 @@ class PacketProcessor(private val myPeerID: String) {
      */
     private suspend fun handleAnnouncement(routed: RoutedPacket) {
         delegate?.handleAnnouncement(routed)
+    }
+
+    private suspend fun handleSos(routed: RoutedPacket) {
+        delegate?.handleSos(routed)
+    }
+
+    private suspend fun handleSosCancel(routed: RoutedPacket) {
+        delegate?.handleSosCancel(routed)
     }
     
     /**
@@ -306,6 +316,8 @@ interface PacketProcessorDelegate {
     suspend fun handleAnnounce(routed: RoutedPacket): Boolean
     fun handleMessage(routed: RoutedPacket)
     fun handleAnnouncement(routed: RoutedPacket)
+    fun handleSos(routed: RoutedPacket) {}
+    fun handleSosCancel(routed: RoutedPacket) {}
     fun handleVoiceFrame(routed: RoutedPacket): Boolean = false
     fun handleLeave(routed: RoutedPacket)
     fun handleFragment(packet: BitchatPacket): BitchatPacket?

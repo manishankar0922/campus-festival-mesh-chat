@@ -12,7 +12,8 @@ enum class BitchatMessageType : Parcelable {
     Message,
     Audio,
     Image,
-    File
+    File,
+    Sos
 }
 
 /**
@@ -83,7 +84,11 @@ data class BitchatMessage(
      * Local flag indicating if this message was verified as an official organizer announcement.
      * Not serialized into the binary payload.
      */
-    val isOfficial: Boolean = false
+    val isOfficial: Boolean = false,
+    val isSos: Boolean = false,
+    val isSosCancel: Boolean = false,
+    val sosLocationNote: String? = null,
+    val originalSosId: String? = null
 ) : Parcelable {
 
     /**
@@ -347,6 +352,10 @@ data class BitchatMessage(
         if (deliveryStatus != other.deliveryStatus) return false
         if (senderNostrPubkey != other.senderNostrPubkey) return false
         if (isOfficial != other.isOfficial) return false
+        if (isSos != other.isSos) return false
+        if (isSosCancel != other.isSosCancel) return false
+        if (sosLocationNote != other.sosLocationNote) return false
+        if (originalSosId != other.originalSosId) return false
 
         return true
     }
@@ -369,6 +378,10 @@ data class BitchatMessage(
         result = 31 * result + (deliveryStatus?.hashCode() ?: 0)
         result = 31 * result + (senderNostrPubkey?.hashCode() ?: 0)
         result = 31 * result + isOfficial.hashCode()
+        result = 31 * result + isSos.hashCode()
+        result = 31 * result + isSosCancel.hashCode()
+        result = 31 * result + (sosLocationNote?.hashCode() ?: 0)
+        result = 31 * result + (originalSosId?.hashCode() ?: 0)
         return result
     }
 }

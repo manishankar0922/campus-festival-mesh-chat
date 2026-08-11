@@ -260,6 +260,11 @@ fun MessageItem(
                 val sizeBytes = remember(path) { file.length() }
                 FileMessageChip(name = file.name, sizeBytes = sizeBytes)
             }
+            BitchatMessageType.Sos -> Text(
+                text = if (message.isSosCancel) "⚠️ [SOS RESOLVED]" else "⚠️ [EMERGENCY SOS] ${message.sosLocationNote ?: ""}",
+                style = ChatVisualTokens.MessageBodyStyle,
+                color = palette.accentOrange
+            )
             BitchatMessageType.Message -> Text(
                 text = message.content,
                 style = ChatVisualTokens.MessageBodyStyle,

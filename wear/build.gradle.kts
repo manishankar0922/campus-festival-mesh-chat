@@ -71,6 +71,7 @@ val sharedSourceIncludes = listOf(
     "com/bitchat/android/crypto/**",
     "com/bitchat/android/identity/**",
     "com/bitchat/android/organizer/**",
+    "com/bitchat/android/sos/**",
     "com/bitchat/android/mesh/**",
     "com/bitchat/android/model/**",
     "com/bitchat/android/sync/**",
@@ -125,6 +126,8 @@ val syncSharedAppTests = tasks.register<Sync>("syncSharedAppTests") {
         include(
             "com/bitchat/android/protocol/**",
             "com/bitchat/android/crypto/**",
+            "com/bitchat/android/organizer/**",
+            "com/bitchat/android/sos/**",
             "com/bitchat/android/mesh/**",
         )
     }

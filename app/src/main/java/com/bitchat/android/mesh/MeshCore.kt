@@ -494,6 +494,14 @@ class MeshCore(
                 } catch (_: Exception) { }
             }
 
+            override fun handleSos(routed: RoutedPacket) {
+                scope.launch { messageHandler.handleSos(routed) }
+            }
+
+            override fun handleSosCancel(routed: RoutedPacket) {
+                scope.launch { messageHandler.handleSosCancel(routed) }
+            }
+
             override fun handleVoiceFrame(routed: RoutedPacket): Boolean =
                 messageHandler.handlePublicVoiceFrame(routed)
 
@@ -575,9 +583,97 @@ class MeshCore(
                 dispatchGlobal(RoutedPacket(packet))
                 try { gossipSyncManager.onPublicPacketSeen(packet) } catch (_: Exception) { }
             } else {
-                android.util.Log.e("MeshCore", "Failed to sign announcement packet. Not sending.")
+                android.util.Log.e("MeshCore", "Failed to sign announcement. Not sending.")
             }
         }
+    }
+
+    fun sendSos(locationNote: String, channel: String): String? {
+        if (!com.bitchat.android.sos.ActiveSosManager.canSendOutgoingSos()) {
+            android.util.Log.w("MeshCore", "Outgoing SOS rate limited")
+            return null
+        }
+        val nowMs = System.currentTimeMillis()
+        val sosId = "SOS-${java.util.UUID.randomUUID().toString().take(8).uppercase()}"
+        val sanitizedNote = com.bitchat.android.sos.SosPayload.sanitizeLocationNote(locationNote)
+        val nickname = peerManager.getPeerNickname(myPeerID) ?: "Anonymous"
+
+        val payloadObj = com.bitchat.android.sos.SosPayload(
+            id = sosId,
+            sender = nickname,
+            channel = channel,
+            locationNote = sanitizedNote,
+            isCancel = false,
+            timestamp = nowMs
+        )
+        val payloadBytes = payloadObj.encode()
+
+        val packet = BitchatPacket(
+            version = 1u,
+            type = MessageType.SOS.value,
+            senderID = MeshPacketUtils.hexStringToByteArray(myPeerID),
+            recipientID = SpecialRecipients.BROADCAST,
+            timestamp = nowMs.toULong(),
+            payload = payloadBytes,
+            signature = null,
+            ttl = maxTtl
+        )
+
+        scope.launch {
+            val signedPacket = signPacketBeforeBroadcast(packet)
+            dispatchGlobal(RoutedPacket(signedPacket))
+        }
+
+        com.bitchat.android.sos.ActiveSosManager.recordOutgoingSos(nowMs)
+        com.bitchat.android.sos.ActiveSosManager.processIncomingSos(
+            com.bitchat.android.sos.ActiveSosEntry(
+                sosId = sosId,
+                senderPeerId = myPeerID,
+                senderNickname = nickname,
+                channel = channel,
+                locationNote = sanitizedNote,
+                timestampMs = nowMs
+            ),
+            nowMs
+        )
+
+        return sosId
+    }
+
+    fun sendSosCancel(originalSosId: String, channel: String): String? {
+        val nowMs = System.currentTimeMillis()
+        val cancelId = "CANCEL-${java.util.UUID.randomUUID().toString().take(8).uppercase()}"
+        val nickname = peerManager.getPeerNickname(myPeerID) ?: "Anonymous"
+
+        val payloadObj = com.bitchat.android.sos.SosPayload(
+            id = cancelId,
+            sender = nickname,
+            channel = channel,
+            locationNote = "SOS Cancelled",
+            isCancel = true,
+            originalSosId = originalSosId,
+            timestamp = nowMs
+        )
+        val payloadBytes = payloadObj.encode()
+
+        val packet = BitchatPacket(
+            version = 1u,
+            type = MessageType.SOS_CANCEL.value,
+            senderID = MeshPacketUtils.hexStringToByteArray(myPeerID),
+            recipientID = SpecialRecipients.BROADCAST,
+            timestamp = nowMs.toULong(),
+            payload = payloadBytes,
+            signature = null,
+            ttl = maxTtl
+        )
+
+        scope.launch {
+            val signedPacket = signPacketBeforeBroadcast(packet)
+            dispatchGlobal(RoutedPacket(signedPacket))
+        }
+
+        com.bitchat.android.sos.ActiveSosManager.processIncomingCancel(myPeerID, originalSosId)
+        return cancelId
     }
 
     private fun sendAuthenticatedPeerState(
