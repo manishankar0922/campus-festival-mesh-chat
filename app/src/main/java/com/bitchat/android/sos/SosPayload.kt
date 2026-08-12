@@ -2,6 +2,7 @@ package com.bitchat.android.sos
 
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
+import java.io.StringWriter
 import java.nio.charset.StandardCharsets
 
 data class SosPayload(
@@ -13,9 +14,31 @@ data class SosPayload(
     @SerializedName("originalSosId") val originalSosId: String? = null,
     @SerializedName("timestamp") val timestamp: Long
 ) {
+    /**
+     * Canonical encoding with deterministic field ordering.
+     *
+     * Fields are written in a fixed, explicit order using JsonWriter so that
+     * the same logical payload always produces identical bytes.  This is
+     * critical because the payload bytes become part of the Ed25519-signed
+     * BitchatPacket — sender and receiver must agree on the exact bytes.
+     *
+     * Field order: id, sender, channel, locationNote, isCancel,
+     * originalSosId, timestamp.
+     */
     fun encode(): ByteArray {
-        val json = gson.toJson(this)
-        return json.toByteArray(StandardCharsets.UTF_8)
+        val sw = StringWriter()
+        val jw = com.google.gson.stream.JsonWriter(sw)
+        jw.beginObject()
+        jw.name("id").value(id)
+        jw.name("sender").value(sender)
+        jw.name("channel").value(channel)
+        jw.name("locationNote").value(locationNote)
+        jw.name("isCancel").value(isCancel)
+        jw.name("originalSosId").value(originalSosId)
+        jw.name("timestamp").value(timestamp)
+        jw.endObject()
+        jw.close()
+        return sw.toString().toByteArray(StandardCharsets.UTF_8)
     }
 
     companion object {
@@ -46,3 +69,4 @@ data class SosPayload(
         }
     }
 }
+

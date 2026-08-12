@@ -197,7 +197,10 @@ fun ChatScreen(viewModel: ChatViewModel) {
 
     // Determine what messages to show based on current context (unified timelines)
     // Legacy private chat timeline removed - private chats now exclusively use PrivateChatSheet
+    val selectedGroup by viewModel.selectedGroup.collectAsStateWithLifecycle()
+
     val displayMessages = when {
+        selectedGroup != null -> channelMessages["group_${selectedGroup!!.groupId}"] ?: emptyList()
         currentChannel != null -> channelMessages[currentChannel] ?: emptyList()
         else -> {
             val locationChannel = selectedLocationChannel
@@ -213,6 +216,7 @@ fun ChatScreen(viewModel: ChatViewModel) {
     // Identity of the timeline on screen, derived exactly like displayMessages above. Drives the
     // per-conversation scroll position and animation state in MessagesList.
     val conversationKey = when {
+        selectedGroup != null -> "group:${selectedGroup!!.groupId}"
         currentChannel != null -> "channel:$currentChannel"
         else -> {
             val locationChannel = selectedLocationChannel
@@ -411,14 +415,22 @@ fun ChatScreen(viewModel: ChatViewModel) {
         },
         onSend = {
             if (messageText.text.trim().isNotEmpty()) {
-                viewModel.sendMessage(messageText.text.trim()) { accepted ->
-                    if (accepted) {
+                val currentGroup = viewModel.selectedGroup.value
+                if (currentGroup != null) {
+                    val sent = viewModel.sendGroupMessage(currentGroup.groupId, messageText.text.trim())
+                    if (sent) {
                         messageText = TextFieldValue("")
-                        viewModel.setConversationDraft(selectedPrivatePeer, "")
-                        // Clearing the field in code does not run onMessageTextChange,
-                        // so the popups have to be dismissed here.
                         viewModel.clearSuggestions()
                         forceScrollToBottom = !forceScrollToBottom
+                    }
+                } else {
+                    viewModel.sendMessage(messageText.text.trim()) { accepted ->
+                        if (accepted) {
+                            messageText = TextFieldValue("")
+                            viewModel.setConversationDraft(selectedPrivatePeer, "")
+                            viewModel.clearSuggestions()
+                            forceScrollToBottom = !forceScrollToBottom
+                        }
                     }
                 }
             }
@@ -960,6 +972,70 @@ private fun ChatDialogs(
                 viewModel.hidePrivateChatSheet()
                 viewModel.endPrivateChat()
             }
+        )
+    }
+
+    // Private Groups Sheets
+    val showPrivateGroupsSheet by viewModel.showPrivateGroupsSheet.collectAsStateWithLifecycle()
+    val showCreateGroupSheet by viewModel.showCreateGroupSheet.collectAsStateWithLifecycle()
+    val showInviteFriendsSheet by viewModel.showInviteFriendsSheet.collectAsStateWithLifecycle()
+    val showGroupDetailsSheet by viewModel.showGroupDetailsSheet.collectAsStateWithLifecycle()
+
+    val selectedGroup by viewModel.selectedGroup.collectAsStateWithLifecycle()
+    val privateGroups by viewModel.privateGroups.collectAsStateWithLifecycle()
+    val pendingInvitations by viewModel.pendingInvitations.collectAsStateWithLifecycle()
+    val connectedPeers by viewModel.connectedPeers.collectAsStateWithLifecycle()
+
+    if (showPrivateGroupsSheet) {
+        PrivateGroupsSheet(
+            isPresented = showPrivateGroupsSheet,
+            onDismiss = { viewModel.setShowPrivateGroupsSheet(false) },
+            groups = privateGroups,
+            pendingInvitations = pendingInvitations,
+            getPeerNickname = { peerId -> viewModel.getPeerNickname(peerId) },
+            onSelectGroup = { group -> viewModel.selectGroup(group) },
+            onOpenGroupDetails = { group ->
+                viewModel.selectGroup(group)
+                viewModel.setShowGroupDetailsSheet(true)
+            },
+            onCreateGroupClick = { viewModel.setShowCreateGroupSheet(true) },
+            onAcceptInvitation = { invite -> viewModel.acceptInvitation(invite) },
+            onDeclineInvitation = { invite -> viewModel.declineInvitation(invite) }
+        )
+    }
+
+    if (showCreateGroupSheet) {
+        CreateGroupSheet(
+            isPresented = showCreateGroupSheet,
+            onDismiss = { viewModel.setShowCreateGroupSheet(false) },
+            onCreateGroup = { name, passcode -> viewModel.createGroup(name, passcode) }
+        )
+    }
+
+    if (showInviteFriendsSheet && selectedGroup != null) {
+        val nearbyPeerList = connectedPeers
+            .filter { it != viewModel.myPeerID }
+            .map { peerID -> peerID to (viewModel.getPeerNickname(peerID) ?: peerID) }
+
+        InviteFriendsSheet(
+            isPresented = showInviteFriendsSheet,
+            onDismiss = { viewModel.setShowInviteFriendsSheet(false) },
+            group = selectedGroup,
+            nearbyPeers = nearbyPeerList,
+            onInvitePeer = { peerID -> viewModel.invitePeerToGroup(selectedGroup!!.groupId, peerID) }
+        )
+    }
+
+    if (showGroupDetailsSheet && selectedGroup != null) {
+        GroupDetailsSheet(
+            isPresented = showGroupDetailsSheet,
+            onDismiss = { viewModel.setShowGroupDetailsSheet(false) },
+            group = selectedGroup,
+            myPeerId = viewModel.myPeerID,
+            getPeerNickname = { peerId -> viewModel.getPeerNickname(peerId) },
+            onInviteClick = { viewModel.setShowInviteFriendsSheet(true) },
+            onRemoveMember = { targetPeerId -> viewModel.removeGroupMember(selectedGroup!!.groupId, targetPeerId) },
+            onLeaveGroup = { viewModel.leaveGroup(selectedGroup!!.groupId) }
         )
     }
 }

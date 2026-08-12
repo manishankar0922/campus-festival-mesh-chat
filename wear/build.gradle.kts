@@ -72,6 +72,7 @@ val sharedSourceIncludes = listOf(
     "com/bitchat/android/identity/**",
     "com/bitchat/android/organizer/**",
     "com/bitchat/android/sos/**",
+    "com/bitchat/android/group/**",
     "com/bitchat/android/mesh/**",
     "com/bitchat/android/model/**",
     "com/bitchat/android/sync/**",

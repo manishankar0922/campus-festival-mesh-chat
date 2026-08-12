@@ -375,4 +375,31 @@ class SosMessagingTest {
         ActiveSosManager.processIncomingSos(ActiveSosEntry("SOS-3", sender1, "Alice", "Main Stage", "Gate 3", nowMs + 1000L), nowMs + 1000L)
         assertEquals("Update from existing sender retains 2 active alerts total", 2, ActiveSosManager.getAllActiveSos(nowMs + 1000L).size)
     }
+
+    @Test
+    fun test32_canonicalSerializationDeterministic_sosCancel() {
+        val cancelPayload = SosPayload("CANCEL-999", "Alice", "Food Court", "SOS Cancelled", true, "SOS-777", nowMs)
+        val firstEncode = cancelPayload.encode()
+        for (i in 1..100) {
+            val nextEncode = cancelPayload.encode()
+            assertArrayEquals("SOS_CANCEL serialization must be 100% byte-identical across calls", firstEncode, nextEncode)
+        }
+        val decoded = SosPayload.decode(firstEncode)
+        assertNotNull(decoded)
+        assertEquals("CANCEL-999", decoded?.id)
+        assertTrue("isCancel must round-trip", decoded?.isCancel == true)
+        assertEquals("SOS-777", decoded?.originalSosId)
+    }
+
+    @Test
+    fun test33_independentConstructionProducesIdenticalBytes() {
+        val ts = 1700000000000L
+        val payloadA = SosPayload("SOS-SAME", "Charlie", "Medical", "Gate 3", false, null, ts)
+        val payloadB = SosPayload("SOS-SAME", "Charlie", "Medical", "Gate 3", false, null, ts)
+        assertArrayEquals("Two independently constructed identical payloads must produce identical bytes", payloadA.encode(), payloadB.encode())
+
+        val cancelA = SosPayload("CANCEL-SAME", "Charlie", "Medical", "SOS Cancelled", true, "SOS-SAME", ts)
+        val cancelB = SosPayload("CANCEL-SAME", "Charlie", "Medical", "SOS Cancelled", true, "SOS-SAME", ts)
+        assertArrayEquals("Two independently constructed identical cancels must produce identical bytes", cancelA.encode(), cancelB.encode())
+    }
 }

@@ -134,6 +134,22 @@ class ChatState(
 
     private val _showSecurityVerificationSheet = MutableStateFlow(false)
     val showSecurityVerificationSheet: StateFlow<Boolean> = _showSecurityVerificationSheet.asStateFlow()
+
+    // Private Group UI state
+    private val _showPrivateGroupsSheet = MutableStateFlow(false)
+    val showPrivateGroupsSheet: StateFlow<Boolean> = _showPrivateGroupsSheet.asStateFlow()
+
+    private val _showCreateGroupSheet = MutableStateFlow(false)
+    val showCreateGroupSheet: StateFlow<Boolean> = _showCreateGroupSheet.asStateFlow()
+
+    private val _showInviteFriendsSheet = MutableStateFlow(false)
+    val showInviteFriendsSheet: StateFlow<Boolean> = _showInviteFriendsSheet.asStateFlow()
+
+    private val _showGroupDetailsSheet = MutableStateFlow(false)
+    val showGroupDetailsSheet: StateFlow<Boolean> = _showGroupDetailsSheet.asStateFlow()
+
+    private val _selectedGroup = MutableStateFlow<com.bitchat.android.model.PrivateGroup?>(null)
+    val selectedGroup: StateFlow<com.bitchat.android.model.PrivateGroup?> = _selectedGroup.asStateFlow()
     
     // Location channels state (for Nostr geohash features)
     private val _selectedLocationChannel = MutableStateFlow<com.bitchat.android.geohash.ChannelID?>(com.bitchat.android.geohash.ChannelID.Mesh)
@@ -355,5 +371,25 @@ class ChatState(
 
     fun setPrivateChatSheetPeer(peerID: String?) {
         _privateChatSheetPeer.value = peerID
+    }
+
+    fun setShowPrivateGroupsSheet(show: Boolean) {
+        _showPrivateGroupsSheet.value = show
+    }
+
+    fun setShowCreateGroupSheet(show: Boolean) {
+        _showCreateGroupSheet.value = show
+    }
+
+    fun setShowInviteFriendsSheet(show: Boolean) {
+        _showInviteFriendsSheet.value = show
+    }
+
+    fun setShowGroupDetailsSheet(show: Boolean) {
+        _showGroupDetailsSheet.value = show
+    }
+
+    fun setSelectedGroup(group: com.bitchat.android.model.PrivateGroup?) {
+        _selectedGroup.value = group
     }
 }

@@ -231,6 +231,60 @@ class MessageHandler(private val myPeerID: String, private val appContext: andro
         }
     }
     
+    fun handleGroupControl(routed: RoutedPacket) {
+        val peerID = routed.peerID ?: return
+        try {
+            val payload = com.bitchat.android.group.GroupControlPayload.decode(routed.packet.payload) ?: return
+            val senderPubKey = delegate?.getPeerInfo(peerID)?.signingPublicKey
+            val groupManager = com.bitchat.android.group.GroupManager.getInstance(appContext)
+            when (payload) {
+                is com.bitchat.android.group.GroupControlPayload.Invite -> {
+                    groupManager.acceptInvitation(payload, peerID, senderPubKey ?: ByteArray(32))
+                }
+                is com.bitchat.android.group.GroupControlPayload.GroupAccept -> {
+                    groupManager.processIncomingAccept(payload, peerID)
+                }
+                is com.bitchat.android.group.GroupControlPayload.KeyDistribution -> {
+                    groupManager.processKeyDistribution(payload, peerID)
+                }
+                is com.bitchat.android.group.GroupControlPayload.Remove -> {
+                    groupManager.removeMember(payload.groupId, payload.targetPeerId, payload.adminPeerId)
+                }
+                is com.bitchat.android.group.GroupControlPayload.Leave -> {
+                    groupManager.leaveGroup(payload.groupId, payload.leavingPeerId)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error processing GROUP_CONTROL: ${e.message}")
+        }
+    }
+
+    fun handleGroupMessage(routed: RoutedPacket) {
+        val peerID = routed.peerID ?: return
+        try {
+            val senderPubKey = delegate?.getPeerInfo(peerID)?.signingPublicKey
+            val groupManager = com.bitchat.android.group.GroupManager.getInstance(appContext)
+            val decrypted = com.bitchat.android.group.GroupMessagingService.decryptAndValidatePacket(
+                routed.packet,
+                senderPubKey,
+                groupManager
+            ) ?: return
+
+            val message = BitchatMessage(
+                id = decrypted.messageId,
+                sender = delegate?.getPeerNickname(peerID) ?: "Unknown",
+                content = decrypted.content,
+                timestamp = java.util.Date(decrypted.timestampMs),
+                isRelay = false,
+                isPrivate = true,
+                senderPeerID = peerID
+            )
+            delegate?.onMessageReceived(message)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error processing GROUP_MESSAGE: ${e.message}")
+        }
+    }
+
     /**
      * Send delivery ACK for a received private message - exactly like iOS
      */

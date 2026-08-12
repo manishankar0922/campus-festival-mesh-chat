@@ -228,6 +228,150 @@ class ChatViewModel(
     val privateChats: StateFlow<Map<String, List<BitchatMessage>>> = state.privateChats
     val selectedPrivateChatPeer: StateFlow<String?> = state.selectedPrivateChatPeer
     val unreadPrivateMessages: StateFlow<Set<String>> = state.unreadPrivateMessages
+
+    // Private Group StateFlows & Methods
+    val showPrivateGroupsSheet: StateFlow<Boolean> = state.showPrivateGroupsSheet
+    val showCreateGroupSheet: StateFlow<Boolean> = state.showCreateGroupSheet
+    val showInviteFriendsSheet: StateFlow<Boolean> = state.showInviteFriendsSheet
+    val showGroupDetailsSheet: StateFlow<Boolean> = state.showGroupDetailsSheet
+    val selectedGroup: StateFlow<com.bitchat.android.model.PrivateGroup?> = state.selectedGroup
+    val privateGroups: StateFlow<List<com.bitchat.android.model.PrivateGroup>> =
+        com.bitchat.android.group.GroupManager.getInstance(application).groupsFlow
+    val pendingInvitations: StateFlow<List<com.bitchat.android.group.GroupControlPayload.Invite>> =
+        com.bitchat.android.group.GroupManager.getInstance(application).pendingInvitationsFlow
+
+    fun getPeerNickname(peerID: String): String? =
+        mesh.getPeerNicknames()[peerID] ?: state.peerNicknames.value[peerID]
+
+    fun setShowPrivateGroupsSheet(show: Boolean) = state.setShowPrivateGroupsSheet(show)
+    fun setShowCreateGroupSheet(show: Boolean) = state.setShowCreateGroupSheet(show)
+    fun setShowInviteFriendsSheet(show: Boolean) = state.setShowInviteFriendsSheet(show)
+    fun setShowGroupDetailsSheet(show: Boolean) = state.setShowGroupDetailsSheet(show)
+
+    fun selectGroup(group: com.bitchat.android.model.PrivateGroup?) {
+        state.setSelectedGroup(group)
+        if (group != null) {
+            state.setSelectedPrivateChatPeer(null)
+            state.setCurrentChannel(null)
+        }
+    }
+
+    fun createGroup(name: String, passcode: String?): Boolean {
+        val myPeerId = mesh.myPeerID
+        val mySigningKey = identityManager.loadSigningKey()?.second ?: ByteArray(32)
+        val groupManager = com.bitchat.android.group.GroupManager.getInstance(getApplication())
+        val newGroup = groupManager.createGroup(name, myPeerId, mySigningKey)
+        if (newGroup != null) {
+            selectGroup(newGroup)
+            return true
+        }
+        return false
+    }
+
+    fun invitePeerToGroup(groupId: String, targetPeerId: String): Boolean {
+        val myPeerId = mesh.myPeerID
+        val groupManager = com.bitchat.android.group.GroupManager.getInstance(getApplication())
+        val invite = groupManager.createInvitation(groupId, targetPeerId, myPeerId) ?: return false
+
+        val payloadBytes = invite.encode()
+        val packet = com.bitchat.android.protocol.BitchatPacket(
+            version = 1u,
+            type = com.bitchat.android.protocol.MessageType.GROUP_CONTROL.value,
+            senderID = com.bitchat.android.mesh.MeshPacketUtils.hexStringToByteArray(myPeerId),
+            recipientID = com.bitchat.android.mesh.MeshPacketUtils.hexStringToByteArray(targetPeerId),
+            timestamp = System.currentTimeMillis().toULong(),
+            payload = payloadBytes,
+            signature = null,
+            ttl = 7u
+        )
+        val privateKey = identityManager.loadSigningKey()?.first
+        if (privateKey != null) {
+            val signer = org.bouncycastle.crypto.signers.Ed25519Signer()
+            signer.init(true, org.bouncycastle.crypto.params.Ed25519PrivateKeyParameters(privateKey, 0))
+            val dataToSign = packet.toBinaryDataForSigning() ?: return false
+            signer.update(dataToSign, 0, dataToSign.size)
+            packet.signature = signer.generateSignature()
+        }
+        meshService.sendToPeer(targetPeerId, packet)
+        return true
+    }
+
+    fun acceptInvitation(invite: com.bitchat.android.group.GroupControlPayload.Invite) {
+        val myPeerId = mesh.myPeerID
+        val mySigningKey = identityManager.loadSigningKey()?.second ?: ByteArray(32)
+        val groupManager = com.bitchat.android.group.GroupManager.getInstance(getApplication())
+        val accept = groupManager.acceptInvitation(invite, myPeerId, mySigningKey) ?: return
+
+        val payloadBytes = accept.encode()
+        val packet = com.bitchat.android.protocol.BitchatPacket(
+            version = 1u,
+            type = com.bitchat.android.protocol.MessageType.GROUP_CONTROL.value,
+            senderID = com.bitchat.android.mesh.MeshPacketUtils.hexStringToByteArray(myPeerId),
+            recipientID = com.bitchat.android.mesh.MeshPacketUtils.hexStringToByteArray(invite.inviterPeerId),
+            timestamp = System.currentTimeMillis().toULong(),
+            payload = payloadBytes,
+            signature = null,
+            ttl = 7u
+        )
+        val privateKey = identityManager.loadSigningKey()?.first
+        if (privateKey != null) {
+            val signer = org.bouncycastle.crypto.signers.Ed25519Signer()
+            signer.init(true, org.bouncycastle.crypto.params.Ed25519PrivateKeyParameters(privateKey, 0))
+            val dataToSign = packet.toBinaryDataForSigning() ?: return
+            signer.update(dataToSign, 0, dataToSign.size)
+            packet.signature = signer.generateSignature()
+        }
+        meshService.sendToPeer(invite.inviterPeerId, packet)
+    }
+
+    fun declineInvitation(invite: com.bitchat.android.group.GroupControlPayload.Invite) {
+        val groupManager = com.bitchat.android.group.GroupManager.getInstance(getApplication())
+        groupManager.declineInvitation(invite.invitationId)
+    }
+
+    fun removeGroupMember(groupId: String, targetPeerId: String): Boolean {
+        val myPeerId = mesh.myPeerID
+        val groupManager = com.bitchat.android.group.GroupManager.getInstance(getApplication())
+        return groupManager.removeMember(groupId, targetPeerId, myPeerId)
+    }
+
+    fun leaveGroup(groupId: String): Boolean {
+        val myPeerId = mesh.myPeerID
+        val groupManager = com.bitchat.android.group.GroupManager.getInstance(getApplication())
+        val success = groupManager.leaveGroup(groupId, myPeerId)
+        if (success && state.selectedGroup.value?.groupId == groupId) {
+            selectGroup(null)
+        }
+        return success
+    }
+
+    fun sendGroupMessage(groupId: String, content: String): Boolean {
+        val myPeerId = mesh.myPeerID
+        val privateKey = identityManager.loadSigningKey()?.first ?: return false
+        val groupManager = com.bitchat.android.group.GroupManager.getInstance(getApplication())
+
+        val packet = com.bitchat.android.group.GroupMessagingService.encryptAndBuildPacket(
+            groupId = groupId,
+            content = content,
+            senderPeerId = myPeerId,
+            senderSigningPrivateKey = privateKey,
+            groupManager = groupManager
+        ) ?: return false
+
+        meshService.send(com.bitchat.android.model.RoutedPacket(packet, myPeerId))
+
+        val message = com.bitchat.android.model.BitchatMessage(
+            id = java.util.UUID.randomUUID().toString(),
+            sender = state.nickname.value,
+            content = content,
+            timestamp = java.util.Date(),
+            isRelay = false,
+            isPrivate = true,
+            senderPeerID = myPeerId
+        )
+        messageManager.addChannelMessage("group_$groupId", message)
+        return true
+    }
     internal val conversationStoreState =
         com.bitchat.android.services.AppStateStore.conversationStoreState
     private val conversationPresencePeers = MutableStateFlow<List<String>>(emptyList())

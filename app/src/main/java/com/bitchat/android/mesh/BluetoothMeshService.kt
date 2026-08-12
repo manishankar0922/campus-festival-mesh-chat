@@ -643,6 +643,14 @@ class BluetoothMeshService(private val context: Context) : TransportBridgeServic
                 serviceScope.launch { messageHandler.handleSosCancel(routed) }
             }
 
+            override fun handleGroupControl(routed: RoutedPacket) {
+                serviceScope.launch { messageHandler.handleGroupControl(routed) }
+            }
+
+            override fun handleGroupMessage(routed: RoutedPacket) {
+                serviceScope.launch { messageHandler.handleGroupMessage(routed) }
+            }
+
             override fun handleVoiceFrame(routed: RoutedPacket): Boolean =
                 messageHandler.handlePublicVoiceFrame(routed)
             

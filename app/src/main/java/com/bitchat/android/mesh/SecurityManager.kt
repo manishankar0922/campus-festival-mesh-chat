@@ -80,7 +80,7 @@ class SecurityManager(private val encryptionService: EncryptionService, private 
             }
         }
 
-        if (messageType == MessageType.SOS || messageType == MessageType.SOS_CANCEL) {
+        if (messageType == MessageType.SOS || messageType == MessageType.SOS_CANCEL || messageType == MessageType.GROUP_CONTROL || messageType == MessageType.GROUP_MESSAGE) {
             val now = currentTime.coerceAtLeast(0).toULong()
             val clockSkew = if (packet.timestamp >= now) {
                 packet.timestamp - now
@@ -88,7 +88,7 @@ class SecurityManager(private val encryptionService: EncryptionService, private 
                 now - packet.timestamp
             }
             if (clockSkew > MESSAGE_TIMEOUT.toULong()) {
-                Log.w(TAG, "Dropping stale or future-dated SOS/SOS_CANCEL from $peerID")
+                Log.w(TAG, "Dropping stale or future-dated ${messageType?.name} from $peerID")
                 return false
             }
         }
@@ -291,7 +291,9 @@ class SecurityManager(private val encryptionService: EncryptionService, private 
                     MessageType.VOICE_FRAME,
                     MessageType.LEAVE,
                     MessageType.SOS,
-                    MessageType.SOS_CANCEL
+                    MessageType.SOS_CANCEL,
+                    MessageType.GROUP_CONTROL,
+                    MessageType.GROUP_MESSAGE
                 )) {
                 return true
             }

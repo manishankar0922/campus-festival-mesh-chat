@@ -575,7 +575,15 @@ fun ChatHeaderContent(
     onLocationNotesClick: () -> Unit,
     onSosClick: () -> Unit = {}
 ) {
+    val selectedGroup by viewModel.selectedGroup.collectAsStateWithLifecycle()
     when {
+        selectedGroup != null -> {
+            GroupHeader(
+                group = selectedGroup!!,
+                onBackClick = { viewModel.selectGroup(null) },
+                onGroupDetailsClick = { viewModel.setShowGroupDetailsSheet(true) }
+            )
+        }
         currentChannel != null -> {
             ChannelHeader(
                 channel = currentChannel,
@@ -598,6 +606,24 @@ fun ChatHeaderContent(
                 viewModel = viewModel
             )
         }
+    }
+}
+
+@Composable
+private fun GroupHeader(
+    group: com.bitchat.android.model.PrivateGroup,
+    onBackClick: () -> Unit,
+    onGroupDetailsClick: () -> Unit
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    ConversationHeader(
+        leadingIconRes = R.drawable.ic_spec_chat_bubbles,
+        leadingIconTint = colorScheme.primary,
+        leadingContentDescription = null,
+        title = group.groupName,
+        onTitleClick = onGroupDetailsClick
+    ) {
+        CloseButton(onClick = onBackClick)
     }
 }
 

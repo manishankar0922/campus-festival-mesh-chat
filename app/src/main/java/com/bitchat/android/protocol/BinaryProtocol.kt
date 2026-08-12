@@ -16,6 +16,8 @@ enum class MessageType(val value: UByte) {
     ANNOUNCEMENT(0x04u), // Official organizer broadcast announcement
     SOS(0x05u), // Offline SOS emergency priority alert
     SOS_CANCEL(0x06u), // Authenticated SOS cancellation
+    GROUP_CONTROL(0x07u), // Private group control packet (invites, ACKs, re-key, management)
+    GROUP_MESSAGE(0x08u), // Private group encrypted chat packet
     NOISE_HANDSHAKE(0x10u),  // Noise handshake
     NOISE_ENCRYPTED(0x11u),  // Noise encrypted transport message
     FRAGMENT(0x20u), // Fragmentation for large packets
