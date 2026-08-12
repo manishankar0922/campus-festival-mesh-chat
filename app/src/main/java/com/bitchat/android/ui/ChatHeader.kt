@@ -743,6 +743,18 @@ private fun MainHeader(
                         onClick = onLocationChannelsClick,
                         showLabel = crowdingMode != HeaderCrowdingMode.IconOnlyLocationChannel
                     )
+
+                    HeaderIconButton(
+                        onClick = { viewModel.setShowPrivateGroupsSheet(true) },
+                        contentDescription = "Private Groups"
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Group,
+                            contentDescription = "Private Groups",
+                            modifier = Modifier.size(HeaderIconSize),
+                            tint = colorScheme.primary
+                        )
+                    }
                 }
 
                 PeerCounter(
