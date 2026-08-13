@@ -13,6 +13,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -554,8 +555,7 @@ fun NicknameEditor(
                 }
             ),
             modifier = Modifier
-                .weight(1f)
-                .widthIn(max = 150.dp)
+                .widthIn(min = 70.dp, max = 110.dp)
                 .horizontalScroll(scrollState)
         )
     }
@@ -711,8 +711,31 @@ private fun MainHeader(
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(2.dp)
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                    border = BorderStroke(1.dp, colorScheme.outline.copy(alpha = 0.15f))
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(2.dp),
+                        horizontalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        PrivateGroupsHeaderButton(
+                            onClick = { viewModel.setShowPrivateGroupsSheet(true) },
+                            showLabel = true
+                        )
+
+                        LocationChannelsButton(
+                            viewModel = viewModel,
+                            onClick = onLocationChannelsClick,
+                            showLabel = crowdingMode != HeaderCrowdingMode.IconOnlyLocationChannel
+                        )
+                    }
+                }
+
                 SosHeaderButton(onClick = onSosClick)
 
                 if (hasUnreadPrivateMessages.isNotEmpty()) {
@@ -725,34 +748,6 @@ private fun MainHeader(
                             contentDescription = stringResource(R.string.cd_unread_private_messages),
                             modifier = Modifier.size(HeaderIconSize),
                             tint = palette.accentOrange
-                        )
-                    }
-                }
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(0.dp)
-                ) {
-                    LocationNotesButton(
-                        viewModel = viewModel,
-                        onClick = onLocationNotesClick
-                    )
-
-                    LocationChannelsButton(
-                        viewModel = viewModel,
-                        onClick = onLocationChannelsClick,
-                        showLabel = crowdingMode != HeaderCrowdingMode.IconOnlyLocationChannel
-                    )
-
-                    HeaderIconButton(
-                        onClick = { viewModel.setShowPrivateGroupsSheet(true) },
-                        contentDescription = "Private Groups"
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Group,
-                            contentDescription = "Private Groups",
-                            modifier = Modifier.size(HeaderIconSize),
-                            tint = colorScheme.primary
                         )
                     }
                 }
@@ -909,5 +904,45 @@ fun SosHeaderButton(
             fontSize = 13.sp,
             color = Color.White
         )
+    }
+}
+
+@Composable
+fun PrivateGroupsHeaderButton(
+    onClick: () -> Unit,
+    showLabel: Boolean = true,
+    modifier: Modifier = Modifier
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = if (showLabel) Arrangement.spacedBy(4.dp) else Arrangement.Center,
+        modifier = modifier
+            .clip(HeaderClusterShape)
+            .pressScaleClickable(
+                onClick = onClick,
+                onClickLabel = "Private Groups"
+            )
+            .height(HeaderTapTarget)
+            .widthIn(min = HeaderTapTarget)
+            .padding(horizontal = if (showLabel) 6.dp else 0.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Default.Group,
+            contentDescription = "Private Groups",
+            modifier = Modifier.size(HeaderIconSize),
+            tint = colorScheme.primary
+        )
+
+        if (showLabel) {
+            Text(
+                text = "Groups",
+                style = MaterialTheme.typography.bodyMedium,
+                fontSize = HeaderTextSize,
+                fontWeight = FontWeight.Bold,
+                color = colorScheme.primary,
+                fontFamily = BitchatFontFamily
+            )
+        }
     }
 }

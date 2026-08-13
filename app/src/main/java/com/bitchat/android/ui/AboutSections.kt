@@ -25,6 +25,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -201,11 +202,12 @@ internal fun AboutHero(
             text = stringResource(R.string.app_name),
             fontFamily = BitchatFontFamily,
             fontWeight = FontWeight.Bold,
-            fontSize = 40.sp,
-            // Monospace at display size leaves too much air between glyphs; pull it in slightly
-            // so the wordmark reads as a single unit.
+            fontSize = 24.sp,
+            lineHeight = 30.sp,
+            textAlign = TextAlign.Center,
             letterSpacing = (-0.5).sp,
-            color = colorScheme.primary
+            color = colorScheme.primary,
+            modifier = Modifier.padding(horizontal = 8.dp)
         )
 
         Spacer(modifier = Modifier.height(4.dp))
