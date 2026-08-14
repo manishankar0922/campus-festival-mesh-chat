@@ -653,14 +653,32 @@ class MessageHandler(private val myPeerID: String, private val appContext: andro
                 Log.w(TAG, "FILE_TRANSFER decode failed (broadcast) from ${peerID.take(8)}")
             }
 
-            // Fallback: plain text
+            // Decode channel from payload. Format: "CHAN:<channel>\n<content>" or plain text.
+            val rawText = String(packet.payload, Charsets.UTF_8)
+            val channel: String?
+            val content: String
+            if (rawText.startsWith("CHAN:")) {
+                val newlineIndex = rawText.indexOf('\n')
+                if (newlineIndex > 5) {
+                    channel = rawText.substring(5, newlineIndex)
+                    content = rawText.substring(newlineIndex + 1)
+                } else {
+                    channel = null
+                    content = rawText
+                }
+            } else {
+                channel = null
+                content = rawText
+            }
+
             val message = BitchatMessage(
                 id = PacketIdUtil.computeIdHex(packet).uppercase(),
                 sender = if (isOfficial) "Official Organizer" else (delegate?.getPeerNickname(peerID) ?: "unknown"),
-                content = String(packet.payload, Charsets.UTF_8),
+                content = content,
                 senderPeerID = peerID,
                 timestamp = Date(packet.timestamp.toLong()),
-                isOfficial = isOfficial
+                isOfficial = isOfficial,
+                channel = channel
             )
             delegate?.onMessageReceived(message)
         } catch (e: Exception) {
@@ -716,12 +734,14 @@ class MessageHandler(private val myPeerID: String, private val appContext: andro
                 Log.w(TAG, "⚠️ FILE_TRANSFER decode failed (private) from ${peerID.take(8)} payloadSize=${packet.payload.size}")
             }
 
-            // Fallback: plain text
+            // Fallback: plain text private message
             val message = BitchatMessage(
                 sender = delegate?.getPeerNickname(peerID) ?: "unknown",
                 content = String(packet.payload, Charsets.UTF_8),
                 senderPeerID = peerID,
-                timestamp = Date(packet.timestamp.toLong())
+                timestamp = Date(packet.timestamp.toLong()),
+                isPrivate = true,
+                recipientNickname = delegate?.getMyNickname()
             )
             delegate?.onMessageReceived(message)
 

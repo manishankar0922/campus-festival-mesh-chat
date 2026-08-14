@@ -183,6 +183,26 @@ class BluetoothMeshService(private val context: Context) : TransportBridgeServic
         peerManager.isPeerDirectlyConnected = { peerID ->
             connectionManager.addressPeerMap.containsValue(peerID)
         }
+        startPeriodicAnnounce()
+    }
+
+    /**
+     * Periodically send identity broadcast announce every 30s to ensure
+     * rapid nearby peer discovery even if initial announce packet was lost.
+     */
+    private fun startPeriodicAnnounce() {
+        serviceScope.launch {
+            while (isActive) {
+                try {
+                    delay(30000)
+                    if (isActive && isBleTransportEnabled()) {
+                        sendBroadcastAnnounce()
+                    }
+                } catch (e: Exception) {
+                    if (e is kotlinx.coroutines.CancellationException) throw e
+                }
+            }
+        }
     }
 
     override fun send(packet: RoutedPacket) {
@@ -896,13 +916,20 @@ class BluetoothMeshService(private val context: Context) : TransportBridgeServic
         if (content.isEmpty()) return
         
         serviceScope.launch {
+            // Encode channel into payload so the receiver can route to the correct channel.
+            // Format: "CHAN:<channel>\n<content>" when channel is set, plain content otherwise.
+            val encodedPayload = if (channel != null) {
+                "CHAN:${channel}\n${content}".toByteArray(Charsets.UTF_8)
+            } else {
+                content.toByteArray(Charsets.UTF_8)
+            }
             val packet = BitchatPacket(
                 version = 1u,
                 type = MessageType.MESSAGE.value,
                 senderID = hexStringToByteArray(myPeerID),
                 recipientID = SpecialRecipients.BROADCAST,
                 timestamp = System.currentTimeMillis().toULong(),
-                payload = content.toByteArray(Charsets.UTF_8),
+                payload = encodedPayload,
                 signature = null,
                 ttl = MAX_TTL
             )

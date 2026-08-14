@@ -548,13 +548,20 @@ class MeshCore(
     fun sendMessage(content: String, mentions: List<String> = emptyList(), channel: String? = null) {
         if (content.isEmpty()) return
         scope.launch {
+            // Encode channel into payload so the receiver can route to the correct channel.
+            // Format: "CHAN:<channel>\n<content>" when channel is set, plain content otherwise.
+            val encodedPayload = if (channel != null) {
+                "CHAN:${channel}\n${content}".toByteArray(Charsets.UTF_8)
+            } else {
+                content.toByteArray(Charsets.UTF_8)
+            }
             val packet = BitchatPacket(
                 version = 1u,
                 type = MessageType.MESSAGE.value,
                 senderID = MeshPacketUtils.hexStringToByteArray(myPeerID),
                 recipientID = SpecialRecipients.BROADCAST,
                 timestamp = System.currentTimeMillis().toULong(),
-                payload = content.toByteArray(Charsets.UTF_8),
+                payload = encodedPayload,
                 signature = null,
                 ttl = maxTtl
             )

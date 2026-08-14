@@ -202,19 +202,13 @@ fun ChatScreen(viewModel: ChatViewModel) {
     val displayMessages = when {
         selectedGroup != null -> channelMessages["group_${selectedGroup!!.groupId}"] ?: emptyList()
         currentChannel != null -> {
+            // Channel messages are keyed by the channel name from the sender.
+            // Check both the exact key and the #-prefixed variant for robustness.
             val chan = currentChannel!!
-            val isGeneral = chan.equals("General", ignoreCase = true) || chan.equals("#General", ignoreCase = true)
-            if (isGeneral) {
-                (messages + (channelMessages["General"] ?: emptyList()) + (channelMessages["#General"] ?: emptyList()))
-                    .distinctBy { it.id }
-                    .sortedBy { it.timestamp }
-            } else {
-                val channelKey = if (chan.startsWith("#")) chan else "#$chan"
-                val altKey = if (chan.startsWith("#")) chan.substring(1) else chan
-                ((channelMessages[channelKey] ?: emptyList()) + (channelMessages[altKey] ?: emptyList()))
-                    .distinctBy { it.id }
-                    .sortedBy { it.timestamp }
-            }
+            val altKey = if (chan.startsWith("#")) chan.substring(1) else "#$chan"
+            val primary = channelMessages[chan] ?: emptyList()
+            val alt = channelMessages[altKey] ?: emptyList()
+            (primary + alt).distinctBy { it.id }.sortedBy { it.timestamp }
         }
         else -> {
             val locationChannel = selectedLocationChannel
