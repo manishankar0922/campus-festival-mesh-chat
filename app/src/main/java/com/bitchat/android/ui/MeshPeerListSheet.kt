@@ -119,12 +119,7 @@ fun MeshPeerListSheet(
         conversations
             .flatMapTo(mutableSetOf()) { it.identityAliases }
     }
-    val visibleConnectedPeers = connectedPeers.filterNot { peerID ->
-        val aliases = runCatching {
-            ContactDirectory.aliasesForConversation(peerID)
-        }.getOrDefault(setOf(peerID))
-        aliases.any { it.lowercase() in conversationIdentityAliases }
-    }
+    val visibleConnectedPeers = connectedPeers
     var pendingConversationDelete by remember {
         mutableStateOf<ConversationSummary?>(null)
     }

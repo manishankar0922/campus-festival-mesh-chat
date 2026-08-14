@@ -201,7 +201,21 @@ fun ChatScreen(viewModel: ChatViewModel) {
 
     val displayMessages = when {
         selectedGroup != null -> channelMessages["group_${selectedGroup!!.groupId}"] ?: emptyList()
-        currentChannel != null -> channelMessages[currentChannel] ?: emptyList()
+        currentChannel != null -> {
+            val chan = currentChannel!!
+            val isGeneral = chan.equals("General", ignoreCase = true) || chan.equals("#General", ignoreCase = true)
+            if (isGeneral) {
+                (messages + (channelMessages["General"] ?: emptyList()) + (channelMessages["#General"] ?: emptyList()))
+                    .distinctBy { it.id }
+                    .sortedBy { it.timestamp }
+            } else {
+                val channelKey = if (chan.startsWith("#")) chan else "#$chan"
+                val altKey = if (chan.startsWith("#")) chan.substring(1) else chan
+                ((channelMessages[channelKey] ?: emptyList()) + (channelMessages[altKey] ?: emptyList()))
+                    .distinctBy { it.id }
+                    .sortedBy { it.timestamp }
+            }
+        }
         else -> {
             val locationChannel = selectedLocationChannel
             if (locationChannel is com.bitchat.android.geohash.ChannelID.Location) {
