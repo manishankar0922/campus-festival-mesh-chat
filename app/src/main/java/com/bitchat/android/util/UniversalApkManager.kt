@@ -104,11 +104,19 @@ class UniversalApkManager(private val context: Context) {
         }
     }
 
-    /**
-     * Get the cached APK file, if it exists.
-     */
     fun getCachedApk(): File? {
-        return getCachedApkInfo()?.file
+        val cached = getCachedApkInfo()?.file
+        if (cached != null && cached.exists()) {
+            return cached
+        }
+        val sourceDir = context.applicationInfo.sourceDir
+        if (sourceDir != null) {
+            val installedFile = File(sourceDir)
+            if (installedFile.exists()) {
+                return installedFile
+            }
+        }
+        return null
     }
 
     /**

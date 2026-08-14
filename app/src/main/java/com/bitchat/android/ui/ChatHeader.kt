@@ -555,7 +555,8 @@ fun NicknameEditor(
                 }
             ),
             modifier = Modifier
-                .widthIn(min = 70.dp, max = 110.dp)
+                .weight(1f, fill = false)
+                .widthIn(min = 60.dp, max = 160.dp)
                 .horizontalScroll(scrollState)
         )
     }
@@ -711,32 +712,13 @@ private fun MainHeader(
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                horizontalArrangement = Arrangement.spacedBy(2.dp)
             ) {
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                    border = BorderStroke(1.dp, colorScheme.outline.copy(alpha = 0.15f))
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(2.dp),
-                        horizontalArrangement = Arrangement.spacedBy(2.dp)
-                    ) {
-                        PrivateGroupsHeaderButton(
-                            onClick = { viewModel.setShowPrivateGroupsSheet(true) },
-                            showLabel = true
-                        )
-
-                        LocationChannelsButton(
-                            viewModel = viewModel,
-                            onClick = onLocationChannelsClick,
-                            showLabel = crowdingMode != HeaderCrowdingMode.IconOnlyLocationChannel
-                        )
-                    }
-                }
-
-                SosHeaderButton(onClick = onSosClick)
+                LocationChannelsButton(
+                    viewModel = viewModel,
+                    onClick = onLocationChannelsClick,
+                    showLabel = crowdingMode != HeaderCrowdingMode.IconOnlyLocationChannel
+                )
 
                 if (hasUnreadPrivateMessages.isNotEmpty()) {
                     HeaderIconButton(

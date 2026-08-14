@@ -303,6 +303,7 @@ fun AboutSheet(
     onDismiss: () -> Unit,
     onShowDebug: (() -> Unit)? = null,
     onSendAnnouncement: ((BitchatMessage) -> Unit)? = null,
+    onSosClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -365,6 +366,41 @@ fun AboutSheet(
                             versionName = versionName ?: "",
                             onLogoClick = { showOrganizerMode = true }
                         )
+                    }
+
+                    if (onSosClick != null) {
+                        item(key = "sos_button") {
+                            Button(
+                                onClick = {
+                                    onDismiss()
+                                    onSosClick()
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = palette.accentOrange,
+                                    contentColor = Color.White
+                                ),
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 24.dp, vertical = 8.dp)
+                                    .height(44.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Warning,
+                                    contentDescription = "Emergency SOS",
+                                    modifier = Modifier.size(18.dp),
+                                    tint = Color.White
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Send Emergency SOS Alert",
+                                    fontFamily = BitchatFontFamily,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            }
+                        }
                     }
 
                     item(key = "tabs") {
@@ -845,9 +881,8 @@ fun AboutSheet(
                                         )
                                     }
 
-                                    // Show sharing rows only when APK is ready
-                                    val canShareAPK = apkStatus is ApkPreparationStatus.Ready ||
-                                            apkStatus is ApkPreparationStatus.UpdateAvailable
+                                    // Offline sharing options are always ready using the installed app APK
+                                    val canShareAPK = true
 
                                     AnimatedVisibility(
                                         visible = canShareAPK,

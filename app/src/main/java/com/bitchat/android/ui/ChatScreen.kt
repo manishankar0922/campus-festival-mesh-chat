@@ -591,6 +591,7 @@ fun ChatScreen(viewModel: ChatViewModel) {
         onSecurityVerificationSheetDismiss = viewModel::hideSecurityVerificationSheet,
         showMeshPeerListSheet = showMeshPeerListSheet,
         onMeshPeerListDismiss = viewModel::hideMeshPeerList,
+        onSosClick = { showSosSheet = true }
     )
 
     legacyPrivateMediaConsent?.let { request ->
@@ -875,6 +876,7 @@ private fun ChatDialogs(
     onSecurityVerificationSheetDismiss: () -> Unit,
     showMeshPeerListSheet: Boolean,
     onMeshPeerListDismiss: () -> Unit,
+    onSosClick: () -> Unit = {}
 ) {
     val privateChatSheetPeer by viewModel.privateChatSheetPeer.collectAsStateWithLifecycle()
 
@@ -896,7 +898,8 @@ private fun ChatDialogs(
         onShowDebug = { showDebugSheet = true },
         onSendAnnouncement = { msg ->
             viewModel.meshService.sendAnnouncement(msg)
-        }
+        },
+        onSosClick = onSosClick
     )
     if (showDebugSheet) {
         com.bitchat.android.ui.debug.DebugSettingsSheet(

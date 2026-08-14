@@ -1,5 +1,6 @@
 package com.bitchat.android.ui
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -8,6 +9,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Tag
@@ -26,6 +28,7 @@ import com.bitchat.android.core.ui.component.sheet.BitchatSheetTopBar
 import com.bitchat.android.core.ui.component.sheet.LocalSheetDismiss
 import com.bitchat.android.model.FestivalChannelInfo
 import com.bitchat.android.model.FestivalChannels
+import com.bitchat.android.model.PrivateGroup
 import com.bitchat.android.ui.theme.BitchatFontFamily
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -43,6 +46,8 @@ fun LocationChannelsSheet(
     val coroutineScope = rememberCoroutineScope()
     val activeChannel by viewModel.currentChannel.collectAsStateWithLifecycle()
     val currentChannelName = activeChannel ?: FestivalChannels.GENERAL
+    val privateGroups by viewModel.privateGroups.collectAsStateWithLifecycle()
+    val selectedGroup by viewModel.selectedGroup.collectAsStateWithLifecycle()
 
     if (isPresented) {
         BitchatBottomSheet(
@@ -58,6 +63,13 @@ fun LocationChannelsSheet(
                     animatedDismiss?.invoke() ?: onDismiss()
                 }
             }
+            val selectGroup: (PrivateGroup) -> Unit = { group ->
+                viewModel.selectGroup(group)
+                coroutineScope.launch {
+                    delay(150L)
+                    animatedDismiss?.invoke() ?: onDismiss()
+                }
+            }
 
             Column(
                 modifier = Modifier
@@ -67,19 +79,19 @@ fun LocationChannelsSheet(
                 BitchatSheetTopBar(
                     onClose = onDismiss,
                     title = {
-                        BitchatSheetTitle(text = "Festival Channels")
+                        BitchatSheetTitle(text = "Channels & Groups")
                     }
                 )
 
                 Text(
-                    text = "Select a channel to view and send messages",
+                    text = "Public festival channels and offline private friend groups",
                     fontFamily = BitchatFontFamily,
-                    fontSize = 14.sp,
+                    fontSize = 13.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 2.dp)
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 LazyColumn(
                     modifier = Modifier
@@ -87,47 +99,159 @@ fun LocationChannelsSheet(
                         .padding(horizontal = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    item {
+                        Text(
+                            text = "PUBLIC FESTIVAL CHANNELS",
+                            fontFamily = BitchatFontFamily,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(start = 4.dp, top = 8.dp, bottom = 4.dp)
+                        )
+                    }
+
                     items(FestivalChannels.CHANNELS) { channelInfo ->
-                        val isSelected = channelInfo.name.equals(currentChannelName, ignoreCase = true)
+                        val isSelected = selectedGroup == null && channelInfo.name.equals(currentChannelName, ignoreCase = true)
                         FestivalChannelRow(
                             channelInfo = channelInfo,
                             isSelected = isSelected,
                             onClick = { selectChannel(channelInfo.name) }
                         )
                     }
-                }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                    item {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 4.dp, vertical = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "PRIVATE FRIEND GROUPS",
+                                fontFamily = BitchatFontFamily,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
 
-                Button(
-                    onClick = {
-                        coroutineScope.launch {
-                            animatedDismiss?.invoke() ?: onDismiss()
-                            viewModel.setShowPrivateGroupsSheet(true)
+                            Button(
+                                onClick = {
+                                    coroutineScope.launch {
+                                        animatedDismiss?.invoke() ?: onDismiss()
+                                        viewModel.setShowCreateGroupSheet(true)
+                                    }
+                                },
+                                modifier = Modifier.height(30.dp),
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = "Create Group",
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "Create Group",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                        .height(44.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                    ),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Group,
-                        contentDescription = "Private Groups",
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Private Groups",
-                        fontFamily = BitchatFontFamily,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    }
+
+                    if (privateGroups.isEmpty()) {
+                        item {
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        coroutineScope.launch {
+                                            animatedDismiss?.invoke() ?: onDismiss()
+                                            viewModel.setShowCreateGroupSheet(true)
+                                        }
+                                    },
+                                shape = RoundedCornerShape(10.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Group,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = "No private groups created yet",
+                                            fontFamily = BitchatFontFamily,
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Text(
+                                            text = "Tap to create a private group for your friends",
+                                            fontFamily = BitchatFontFamily,
+                                            fontSize = 11.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        items(privateGroups) { group ->
+                            val isSelected = selectedGroup?.groupId == group.groupId
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { selectGroup(group) },
+                                shape = RoundedCornerShape(10.dp),
+                                color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                                border = BorderStroke(1.dp, if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Group,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp),
+                                        tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Text(
+                                        text = group.groupName,
+                                        fontFamily = BitchatFontFamily,
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    if (isSelected) {
+                                        Icon(
+                                            imageVector = Icons.Default.Check,
+                                            contentDescription = "Selected",
+                                            modifier = Modifier.size(18.dp),
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
