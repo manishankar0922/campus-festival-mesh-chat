@@ -5,7 +5,7 @@
     <string name="cashu_copy_token">Copy token</string>
     <string name="cashu_redeem_wallet">Redeem in wallet</string>
     <string name="cashu_redeem_web">Redeem on web</string>
-    <string name="app_name">Campus Festival Mesh Chat</string>
+    <string name="app_name">BluChat</string>
     <string name="permission_bluetooth_rationale">Bluetooth is needed to find nearby festival users.</string>
     <string name="permission_location_rationale">Bluetooth scanning needs location access to find nearby festival users.</string>
     <string name="permission_notification_rationale">Notifications alert you of new messages at the festival.</string>
@@ -30,12 +30,12 @@
     <string name="battery_optimization_not_required">Battery Optimization Not Required</string>
     <string name="battery_optimization_checking">Checking Battery Optimization</string>
     <string name="battery_optimization_why_disable">Why disable battery optimization?</string>
-    <string name="battery_optimization_explanation">Campus Festival Mesh Chat runs in the background to connect with nearby devices. Battery optimization can interrupt connections, causing messages to be delayed or missed.\n\nDisabling battery optimization ensures reliable nearby messaging.</string>
+    <string name="battery_optimization_explanation">BluChat runs in the background to connect with nearby devices. Battery optimization can interrupt connections, causing messages to be delayed or missed.\n\nDisabling battery optimization ensures reliable nearby messaging.</string>
     <string name="battery_optimization_disable_button">Disable Battery Optimization</string>
-    <string name="battery_optimization_note">Note: You can change this setting later in Android Settings > Apps > Campus Festival Mesh Chat > Battery</string>
+    <string name="battery_optimization_note">Note: You can change this setting later in Android Settings > Apps > BluChat > Battery</string>
     <string name="battery_optimization_not_supported_explanation">Your device doesn\'t require battery optimization settings. The app will run normally.</string>
     <string name="battery_optimization_not_supported_message">Your device doesn\'t require battery optimization settings. The app will run normally.</string>
-    <string name="battery_optimization_success_message">Campus Festival Mesh Chat can run reliably in the background</string>
+    <string name="battery_optimization_success_message">BluChat can run reliably in the background</string>
     <string name="battery_optimization_benefits">• Ensures reliable message delivery\n• Maintains nearby connectivity\n• Allows background message delivery\n• Prevents connection drops</string>
     <string name="battery_optimization_check_again">Check Again</string>
     <string name="battery_optimization_skip">Skip for Now</string>
@@ -115,7 +115,7 @@
   <string name="notification_reply">Reply</string>
   <string name="notification_mark_read">Mark read</string>
   <string name="notification_private_message">New private message</string>
-  <string name="notification_content_hidden">Open bitchat to view it</string>
+  <string name="notification_content_hidden">Open BluChat to view it</string>
   <string name="notification_channel_direct_messages">Direct Messages</string>
   <string name="notification_channel_direct_messages_description">Notifications for private messages from other users</string>
   <string name="notification_channel_geohash">Geohash Chats</string>
@@ -152,7 +152,7 @@
   <string name="cd_pick_file">Pick file</string>
 
   <!-- About sheet -->
-  <string name="about_tagline">Offline campus festival chat</string>
+  <string name="about_tagline">Offline Campus Festival Communication</string>
 
   <!-- About sheet: tabs -->
   <string name="about_tab_info">Info</string>
@@ -219,16 +219,16 @@
   <string name="about_last">Last: %1$s</string>
   <string name="about_emergency_title">Panic Mode</string>
   <string name="about_debug_settings">Debug Settings</string>
-  <string name="about_footer">Campus Festival Mesh Chat • Offline Festival Communication</string>
+  <string name="about_footer">BluChat • Offline Campus Festival Communication</string>
   <string name="close_plain">Close</string>
   <string name="cd_privacy_protected">Privacy Protected</string>
   <string name="cancel_lower">Cancel</string>
 
   <!-- APK Sharing -->
-  <string name="share_bitchat_title">Share Campus Festival Mesh Chat</string>
-  <string name="share_bitchat_subtitle">Share installation file for offline distribution</string>
-  <string name="share_apk_title">Share Campus Festival Mesh Chat App</string>
-  <string name="share_apk_explanation">This will share the Campus Festival Mesh Chat installation file(s) so others can install the app without internet access. Perfect for festival chat expansion!</string>
+  <string name="share_BluChat_title">Share BluChat</string>
+  <string name="share_BluChat_subtitle">Share installation file for offline distribution</string>
+  <string name="share_apk_title">Share BluChat App</string>
+  <string name="share_apk_explanation">This will share the BluChat installation file(s) so others can install the app without internet access. Perfect for festival chat expansion!</string>
   <string name="share_apk_receiver_instructions">The receiver will need to:\n• Enable \"Install from unknown sources\" in Android settings\n• Uninstall the app first if already installed (signatures differ)</string>
   <string name="share_apk_confirm">Share App</string>
   <string name="share_apk_chooser_title">Share app via…</string>
@@ -252,7 +252,7 @@
   <string name="prepare_apk_info">Version %1$s • %2$d MB</string>
   <string name="prepare_apk_dialog_title">Download Universal APK?</string>
   <string name="prepare_apk_dialog_message">This will download the universal APK (~%1$d MB) from GitHub releases. You only need to do this once.</string>
-  <string name="prepare_apk_dialog_message_unknown_size" translatable="false">The release size is temporarily unavailable. BitChat will retry the GitHub request before downloading.</string>
+  <string name="prepare_apk_dialog_message_unknown_size" translatable="false">The release size is temporarily unavailable. BluChat will retry the GitHub request before downloading.</string>
   <string name="prepare_apk_dialog_confirm">Download</string>
   <string name="prepare_apk_downloading_title">Downloading Universal APK</string>
   <string name="prepare_apk_downloading_message">Downloading %1$d MB…</string>
@@ -282,12 +282,12 @@
   <string name="hotspot_disconnect_confirm">Disconnect and start</string>
 
   <!-- APK Installation -->
-  <string name="install_bitchat_title">Install Received APK</string>
-  <string name="install_bitchat_subtitle">Install app from received files</string>
+  <string name="install_BluChat_title">Install Received APK</string>
+  <string name="install_BluChat_subtitle">Install app from received files</string>
   <string name="install_apk_dialog_title">Install App Update</string>
-  <string name="install_apk_dialog_message">Install Campus Festival Mesh Chat from the received APK file(s)? This allows offline app distribution.</string>
+  <string name="install_apk_dialog_message">Install BluChat from the received APK file(s)? This allows offline app distribution.</string>
   <string name="install_apk_permission_title">Permission Required</string>
-  <string name="install_apk_permission_message">Campus Festival Mesh Chat needs permission to install packages for self-distribution. Please enable \"Install unknown apps\" in the next screen.</string>
+  <string name="install_apk_permission_message">BluChat needs permission to install packages for self-distribution. Please enable \"Install unknown apps\" in the next screen.</string>
   <string name="install_apk_confirm">Install</string>
   <string name="install_apk_grant_permission">Grant Permission</string>
   <string name="install_apk_select_files">Select APK Files</string>
@@ -311,7 +311,7 @@
   <string name="cd_open_map">Open map</string>
   <string name="cd_remove_bookmark">Remove bookmark</string>
   <string name="cd_teleport">Teleport</string>
-  <string name="notification_action_quit_bitchat">Quit bitchat</string>
+  <string name="notification_action_quit_bitchat">Quit BluChat</string>
   <string name="about_background_title">Run in Background</string>
   <string name="about_background_desc">Keep mesh active when app is closed (foreground service)</string>
   <string name="cd_leave_channel">Leave channel</string>
@@ -581,9 +581,9 @@
   <string name="perm_background_location_desc">Recommended to scan for nearby devices while the app is in the background</string>
   <string name="perm_background_location_system">Allow background location access</string>
   <string name="perm_notifications_desc">Receive notifications when you receive private messages</string>
-  <string name="perm_notifications_system">Allow bitchat to send you notifications</string>
-  <string name="perm_battery_desc">Disable battery optimization to ensure bitchat runs reliably in the background and maintains mesh network connections</string>
-  <string name="perm_battery_system">Allow bitchat to run without battery restrictions</string>
+  <string name="perm_notifications_system">Allow BluChat to send you notifications</string>
+  <string name="perm_battery_desc">Disable battery optimization to ensure BluChat runs reliably in the background and maintains mesh network connections</string>
+  <string name="perm_battery_system">Allow BluChat to run without battery restrictions</string>
 
   <!-- Permission types -->
   <string name="perm_type_nearby_devices">Nearby Devices</string>

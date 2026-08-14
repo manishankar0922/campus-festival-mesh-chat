@@ -116,7 +116,7 @@ class ApkWebServer(
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Download BitChat</title>
+    <title>Download BluChat</title>
     <style>
         * {
             margin: 0;
@@ -126,23 +126,23 @@ class ApkWebServer(
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
-            color: #333;
         }
 
         .container {
-            background: white;
-            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
             padding: 40px 30px;
-            max-width: 500px;
+            max-width: 400px;
             width: 100%;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
         }
 
         .logo {
@@ -151,14 +151,15 @@ class ApkWebServer(
         }
 
         h1 {
-            font-size: 32px;
-            margin-bottom: 10px;
-            color: #667eea;
+            color: #1a202c;
+            font-size: 28px;
+            margin-bottom: 8px;
+            font-weight: 700;
         }
 
         .subtitle {
-            font-size: 16px;
-            color: #666;
+            color: #718096;
+            font-size: 14px;
             margin-bottom: 30px;
         }
 
@@ -170,81 +171,74 @@ class ApkWebServer(
         }
 
         .info-box {
-            background: #f5f7fa;
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
             padding: 15px;
-            border-radius: 10px;
         }
 
         .info-label {
             font-size: 12px;
-            color: #888;
+            color: #a0aec0;
             text-transform: uppercase;
-            font-weight: 600;
+            letter-spacing: 0.5px;
             margin-bottom: 5px;
         }
 
         .info-value {
-            font-size: 18px;
-            font-weight: bold;
-            color: #333;
+            font-size: 16px;
+            color: #2d3748;
+            font-weight: 600;
         }
 
         .download-button {
-            display: inline-block;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: block;
+            width: 100%;
+            padding: 18px;
+            background: #0066FF;
             color: white;
-            padding: 18px 40px;
-            border-radius: 50px;
             text-decoration: none;
+            border-radius: 16px;
             font-size: 18px;
-            font-weight: 600;
+            font-weight: 700;
             margin-bottom: 30px;
+            box-shadow: 0 10px 20px rgba(0, 102, 255, 0.3);
             transition: transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-        }
-
-        .download-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
         }
 
         .download-button:active {
-            transform: translateY(0);
+            transform: scale(0.98);
         }
 
         .instructions {
             text-align: left;
-            background: #f5f7fa;
+            background: #f7fafc;
+            border-radius: 16px;
             padding: 20px;
-            border-radius: 10px;
-            margin-top: 20px;
+            margin-bottom: 20px;
         }
 
         .instructions h3 {
-            font-size: 16px;
-            margin-bottom: 15px;
-            color: #667eea;
+            font-size: 14px;
+            color: #2d3748;
+            margin-bottom: 12px;
         }
 
         .instructions ol {
-            margin-left: 20px;
-        }
-
-        .instructions li {
-            margin-bottom: 10px;
+            padding-left: 20px;
+            color: #4a5568;
+            font-size: 13px;
             line-height: 1.6;
-            font-size: 14px;
-            color: #555;
         }
 
         .warning {
-            background: #fff3cd;
-            border: 1px solid #ffc107;
+            background: #fffaf0;
+            border: 1px solid #feebc8;
+            border-radius: 12px;
             padding: 15px;
-            border-radius: 10px;
-            margin-top: 20px;
-            font-size: 13px;
-            color: #856404;
+            color: #742a2a;
+            font-size: 12px;
+            line-height: 1.5;
             text-align: left;
         }
 
@@ -256,9 +250,9 @@ class ApkWebServer(
 </head>
 <body>
     <div class="container">
-        <div class="logo">🔒</div>
-        <h1>BitChat</h1>
-        <p class="subtitle">Secure Mesh Messaging</p>
+        <div class="logo">💬</div>
+        <h1>BluChat</h1>
+        <p class="subtitle">Offline Campus Festival Communication</p>
 
         <div class="info-grid">
             <div class="info-box">
@@ -272,7 +266,7 @@ class ApkWebServer(
         </div>
 
         <a href="/bitchat.apk" class="download-button">
-            📥 Download BitChat
+            📥 Download BluChat
         </a>
 
         <div class="instructions">
@@ -281,14 +275,14 @@ class ApkWebServer(
                 <li>Tap the download button above</li>
                 <li>Wait for the download to complete</li>
                 <li>Open the downloaded APK file</li>
-                <li>If prompted, enable "Install from unknown sources" for your browser</li>
+                <li>If prompted, enable "Install from unknown sources"</li>
                 <li>Follow the installation prompts</li>
             </ol>
         </div>
 
         <div class="warning">
             <strong>⚠️ Note:</strong>
-            If you already have BitChat installed, you may need to uninstall it first before installing this version. Make sure to backup your data if needed.
+            If you already have BluChat installed, you may need to uninstall it first before installing this version. Make sure to backup your data if needed.
         </div>
     </div>
 </body>

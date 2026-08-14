@@ -239,13 +239,32 @@ class MessageHandler(private val myPeerID: String, private val appContext: andro
             val groupManager = com.bitchat.android.group.GroupManager.getInstance(appContext)
             when (payload) {
                 is com.bitchat.android.group.GroupControlPayload.Invite -> {
-                    groupManager.acceptInvitation(payload, peerID, senderPubKey ?: ByteArray(32))
+                    groupManager.onInvitationReceived(payload)
                 }
                 is com.bitchat.android.group.GroupControlPayload.GroupAccept -> {
-                    groupManager.processIncomingAccept(payload, peerID)
+                    val result = groupManager.processIncomingAccept(payload, myPeerID)
+                    if (result != null) {
+                        val (updatedGroup, keyDist) = result
+                        val keyDistBytes = keyDist.encode()
+                        for (memberId in updatedGroup.memberPeerIds) {
+                            if (memberId != myPeerID) {
+                                val packet = com.bitchat.android.protocol.BitchatPacket(
+                                    version = 1u,
+                                    type = com.bitchat.android.protocol.MessageType.GROUP_CONTROL.value,
+                                    senderID = com.bitchat.android.mesh.MeshPacketUtils.hexStringToByteArray(myPeerID),
+                                    recipientID = com.bitchat.android.mesh.MeshPacketUtils.hexStringToByteArray(memberId),
+                                    timestamp = System.currentTimeMillis().toULong(),
+                                    payload = keyDistBytes,
+                                    signature = null,
+                                    ttl = 7u
+                                )
+                                delegate?.sendPacket(packet)
+                            }
+                        }
+                    }
                 }
                 is com.bitchat.android.group.GroupControlPayload.KeyDistribution -> {
-                    groupManager.processKeyDistribution(payload, peerID)
+                    groupManager.processKeyDistribution(payload, myPeerID)
                 }
                 is com.bitchat.android.group.GroupControlPayload.Remove -> {
                     groupManager.removeMember(payload.groupId, payload.targetPeerId, payload.adminPeerId)
@@ -277,7 +296,8 @@ class MessageHandler(private val myPeerID: String, private val appContext: andro
                 timestamp = java.util.Date(decrypted.timestampMs),
                 isRelay = false,
                 isPrivate = true,
-                senderPeerID = peerID
+                senderPeerID = peerID,
+                channel = "group_${decrypted.groupId}"
             )
             delegate?.onMessageReceived(message)
         } catch (e: Exception) {
@@ -608,15 +628,6 @@ class MessageHandler(private val myPeerID: String, private val appContext: andro
     private suspend fun handleBroadcastMessage(routed: RoutedPacket, isOfficial: Boolean = false) {
         val packet = routed.packet
         val peerID = routed.peerID ?: "unknown"
-        
-        // Enforce: only accept public messages from verified peers we know (exempt official announcements)
-        if (!isOfficial) {
-            val peerInfo = delegate?.getPeerInfo(peerID)
-            if (peerInfo == null || !peerInfo.isVerifiedNickname) {
-                Log.w(TAG, "Dropping public message from unverified peer ${peerID.take(8)}")
-                return
-            }
-        }
         
         try {
             // Try file packet first (voice, image, etc.) and log outcome for FILE_TRANSFER

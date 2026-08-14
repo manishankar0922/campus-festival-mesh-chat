@@ -13,6 +13,11 @@ import kotlinx.coroutines.runBlocking
 internal object IncomingMessageAdmission {
     fun admitToAppState(message: BitchatMessage): Boolean = try {
         when {
+            message.channel != null -> {
+                AppStateStore.addChannelMessage(message.channel, message)
+                true
+            }
+
             message.isPrivate -> {
                 val peerID = message.senderPeerID?.takeIf(String::isNotBlank)
                     ?: return false
@@ -22,11 +27,6 @@ internal object IncomingMessageAdmission {
                 runBlocking {
                     AppStateStore.addPrivateMessageDurably(peerID, message)
                 }
-            }
-
-            message.channel != null -> {
-                AppStateStore.addChannelMessage(message.channel, message)
-                true
             }
 
             else -> {

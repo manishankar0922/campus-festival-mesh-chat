@@ -1,6 +1,10 @@
-# Campus Festival Mesh Chat
+# BluChat
 
-Campus Festival Mesh Chat is an offline, Bluetooth Low Energy (BLE) messaging application built specifically for communication during crowded campus events, concerts, and festivals. Designed for offline BLE mesh communication during crowded campus events, it allows nearby attendees to discover one another and send secure messages without requiring cellular data, Internet connectivity, user accounts, phone numbers, or central servers.
+![BluChat](image.png)
+
+### Offline Campus Festival Communication
+
+BluChat is an offline, Bluetooth Low Energy (BLE) messaging application built specifically for communication during crowded campus events, concerts, and festivals. Designed for offline BLE mesh communication during crowded campus events, it allows nearby attendees to discover one another and send secure messages without requiring cellular data, Internet connectivity, user accounts, phone numbers, or central servers.
 
 ---
 
@@ -15,7 +19,7 @@ At large campus festivals, sports events, and multi-stage concerts, tens of thou
 
 ## The Solution
 
-Campus Festival Mesh Chat addresses network congestion by removing reliance on central cell towers and Internet infrastructure entirely:
+BluChat addresses network congestion by removing reliance on central cell towers and Internet infrastructure entirely:
 - **Direct Peer-to-Peer Communication**: Smartphones communicate directly with neighboring smartphones via Bluetooth Low Energy (BLE).
 - **Multi-Hop Mesh Relaying**: Devices automatically relay encrypted messages through intermediate attendee phones, expanding communication range across the festival grounds.
 - **100% Offline Operation**: Everything runs locally on device—no SIM card active data, Wi-Fi networks, or cloud backend servers are ever required.

@@ -14,6 +14,9 @@ import java.util.concurrent.ConcurrentHashMap
 import javax.crypto.KeyGenerator
 import javax.crypto.spec.SecretKeySpec
 
+import org.json.JSONArray
+import org.json.JSONObject
+
 /**
  * Core manager for Private Friend Groups state management, invitation lifecycle,
  * and epoch secret key rotation.
@@ -34,6 +37,7 @@ class GroupManager private constructor(
 
     companion object {
         private const val TAG = "GroupManager"
+        private const val PREFS_NAME = "bluchat_private_groups_meta"
         const val INVITATION_EXPIRATION_MS = 15 * 60 * 1000L // 15 minutes
         const val KEY_GRACE_WINDOW_MS = 2 * 60 * 1000L // 2 minutes
 
@@ -42,13 +46,108 @@ class GroupManager private constructor(
 
         fun getInstance(context: Context): GroupManager {
             return INSTANCE ?: synchronized(this) {
-                INSTANCE ?: GroupManager(SecureGroupKeyStore.getInstance(context)).also { INSTANCE = it }
+                INSTANCE ?: GroupManager(SecureGroupKeyStore.getInstance(context)).also { 
+                    it.initializeStorage(context)
+                    INSTANCE = it 
+                }
             }
         }
 
         internal fun createTestInstance(testKeyStore: SecureGroupKeyStore): GroupManager {
             return GroupManager(testKeyStore)
         }
+    }
+
+    private var prefs: android.content.SharedPreferences? = null
+
+    fun initializeStorage(context: Context) {
+        if (prefs == null) {
+            prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            loadSavedGroups()
+        }
+    }
+
+    private fun loadSavedGroups() {
+        val p = prefs ?: return
+        val allEntries = p.all
+        for ((_, jsonStr) in allEntries) {
+            if (jsonStr is String) {
+                try {
+                    val obj = JSONObject(jsonStr)
+                    val group = jsonToPrivateGroup(obj)
+                    activeGroups[group.groupId] = group
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error loading saved group JSON: ${e.message}")
+                }
+            }
+        }
+        _groupsFlow.value = activeGroups.values.toList()
+    }
+
+    private fun persistGroups() {
+        val p = prefs ?: return
+        val editor = p.edit()
+        editor.clear()
+        for ((groupId, group) in activeGroups) {
+            try {
+                editor.putString(groupId, group.toJson().toString())
+            } catch (e: Exception) {
+                Log.e(TAG, "Error saving group JSON: ${e.message}")
+            }
+        }
+        editor.apply()
+    }
+
+    private fun PrivateGroup.toJson(): JSONObject {
+        val obj = JSONObject()
+        obj.put("groupId", groupId)
+        obj.put("groupName", groupName)
+        obj.put("creatorPeerId", creatorPeerId)
+        obj.put("creatorSigningPubKey", Base64.encodeToString(creatorSigningPubKey, Base64.NO_WRAP))
+        obj.put("adminPeerIds", JSONArray(adminPeerIds))
+        obj.put("memberPeerIds", JSONArray(memberPeerIds))
+        val keysObj = JSONObject()
+        for ((peerId, pubKey) in memberSigningKeys) {
+            keysObj.put(peerId, Base64.encodeToString(pubKey, Base64.NO_WRAP))
+        }
+        obj.put("memberSigningKeys", keysObj)
+        obj.put("activeEpoch", activeEpoch)
+        obj.put("createdAtMs", createdAtMs)
+        return obj
+    }
+
+    private fun jsonToPrivateGroup(obj: JSONObject): PrivateGroup {
+        val groupId = obj.getString("groupId")
+        val groupName = obj.getString("groupName")
+        val creatorPeerId = obj.getString("creatorPeerId")
+        val creatorSigningPubKey = Base64.decode(obj.getString("creatorSigningPubKey"), Base64.NO_WRAP)
+        val adminArray = obj.getJSONArray("adminPeerIds")
+        val adminPeerIds = mutableSetOf<String>()
+        for (i in 0 until adminArray.length()) adminPeerIds.add(adminArray.getString(i))
+        val memberArray = obj.getJSONArray("memberPeerIds")
+        val memberPeerIds = mutableSetOf<String>()
+        for (i in 0 until memberArray.length()) memberPeerIds.add(memberArray.getString(i))
+        val keysObj = obj.getJSONObject("memberSigningKeys")
+        val memberSigningKeys = mutableMapOf<String, ByteArray>()
+        val keys = keysObj.keys()
+        while (keys.hasNext()) {
+            val key = keys.next()
+            memberSigningKeys[key] = Base64.decode(keysObj.getString(key), Base64.NO_WRAP)
+        }
+        val activeEpoch = obj.optInt("activeEpoch", 1)
+        val createdAtMs = obj.optLong("createdAtMs", System.currentTimeMillis())
+
+        return PrivateGroup(
+            groupId = groupId,
+            groupName = groupName,
+            creatorPeerId = creatorPeerId,
+            creatorSigningPubKey = creatorSigningPubKey,
+            adminPeerIds = adminPeerIds,
+            memberPeerIds = memberPeerIds,
+            memberSigningKeys = memberSigningKeys,
+            activeEpoch = activeEpoch,
+            createdAtMs = createdAtMs
+        )
     }
 
     // Active groups: groupId -> PrivateGroup metadata
@@ -72,6 +171,7 @@ class GroupManager private constructor(
 
     private fun notifyGroupsUpdated() {
         _groupsFlow.value = activeGroups.values.toList()
+        persistGroups()
     }
 
     private fun notifyInvitationsUpdated() {
@@ -243,6 +343,26 @@ class GroupManager private constructor(
             keyStore.saveGroupKey(invite.groupId, invite.invitationEpoch, secretKey)
         }
 
+        // Instantiates and stores PrivateGroup metadata in activeGroups for acceptor
+        val existingGroup = activeGroups[invite.groupId]
+        val acceptorGroup = existingGroup?.copy(
+            memberPeerIds = existingGroup.memberPeerIds + acceptorPeerId,
+            memberSigningKeys = existingGroup.memberSigningKeys + (acceptorPeerId to acceptorSigningPubKey),
+            activeEpoch = invite.invitationEpoch
+        ) ?: PrivateGroup(
+            groupId = invite.groupId,
+            groupName = invite.groupName,
+            creatorPeerId = invite.creatorPeerId,
+            creatorSigningPubKey = ByteArray(32),
+            adminPeerIds = setOf(invite.creatorPeerId),
+            memberPeerIds = setOf(invite.creatorPeerId, acceptorPeerId),
+            memberSigningKeys = mapOf(acceptorPeerId to acceptorSigningPubKey),
+            activeEpoch = invite.invitationEpoch,
+            createdAtMs = invite.timestampMs
+        )
+        activeGroups[invite.groupId] = acceptorGroup
+        notifyGroupsUpdated()
+
         val pubKeyB64 = java.util.Base64.getEncoder().encodeToString(acceptorSigningPubKey)
         return GroupControlPayload.GroupAccept(
             invitationId = invite.invitationId,
@@ -309,10 +429,12 @@ class GroupManager private constructor(
         keyDist: GroupControlPayload.KeyDistribution,
         receiverPeerId: String
     ): Boolean {
-        val group = activeGroups[keyDist.groupId] ?: return false
-        if (!group.memberPeerIds.contains(receiverPeerId)) {
-            Log.w(TAG, "Rejecting key distribution: $receiverPeerId is not a member of ${keyDist.groupId}")
-            return false
+        val group = activeGroups[keyDist.groupId]
+        if (group != null) {
+            if (!group.memberPeerIds.contains(receiverPeerId)) {
+                Log.w(TAG, "Rejecting key distribution: $receiverPeerId is not a member of ${keyDist.groupId}")
+                return false
+            }
         }
 
         val keyBytes = java.util.Base64.getDecoder().decode(keyDist.encryptedGroupKey)
@@ -320,8 +442,12 @@ class GroupManager private constructor(
 
         val secretKey = SecretKeySpec(keyBytes, "AES")
         val saved = keyStore.saveGroupKey(keyDist.groupId, keyDist.epoch, secretKey)
-        if (saved && keyDist.epoch > group.activeEpoch) {
-            activeGroups[keyDist.groupId] = group.copy(activeEpoch = keyDist.epoch)
+
+        if (group != null && saved) {
+            if (keyDist.epoch > group.activeEpoch) {
+                activeGroups[keyDist.groupId] = group.copy(activeEpoch = keyDist.epoch)
+                notifyGroupsUpdated()
+            }
         }
         return saved
     }

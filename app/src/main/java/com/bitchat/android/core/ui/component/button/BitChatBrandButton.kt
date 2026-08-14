@@ -32,7 +32,7 @@ import kotlin.time.Duration.Companion.milliseconds
 private val MultiClickThreshold = 300.milliseconds
 
 @Composable
-fun BitChatBrandButton(
+fun BluChatBrandButton(
     onClick: () -> Unit,
     onTripleClick: () -> Unit,
     contentDescription: String,
@@ -49,9 +49,6 @@ fun BitChatBrandButton(
     val interactionSource = remember { MutableInteractionSource() }
     val pressScale = rememberPressScale(interactionSource)
 
-    // A plain Box rather than an IconButton: IconButton insists on drawing a ripple, which was the
-    // only press background left in the header once every other control moved to scale-only
-    // feedback.
     Box(
         modifier = modifier
             .clip(CircleShape)
@@ -81,7 +78,7 @@ fun BitChatBrandButton(
         contentAlignment = Alignment.Center
     ) {
         Icon(
-            imageVector = BitChatIcon,
+            imageVector = com.bitchat.android.core.ui.icon.BluChatIcon,
             contentDescription = contentDescription,
             tint = tint,
             modifier = Modifier
@@ -90,3 +87,13 @@ fun BitChatBrandButton(
         )
     }
 }
+
+@Composable
+fun BitChatBrandButton(
+    onClick: () -> Unit,
+    onTripleClick: () -> Unit,
+    contentDescription: String,
+    modifier: Modifier = Modifier,
+    tint: Color = MaterialTheme.colorScheme.primary,
+    iconSize: Dp = 22.dp,
+) = BluChatBrandButton(onClick, onTripleClick, contentDescription, modifier, tint, iconSize)

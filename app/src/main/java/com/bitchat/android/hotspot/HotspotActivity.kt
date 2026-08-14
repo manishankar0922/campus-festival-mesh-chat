@@ -530,7 +530,7 @@ fun WebsiteTabContent(ipAddress: String, port: Int) {
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
         Text(
-            text = "Step 2: Download BitChat",
+            text = "Step 2: Download BluChat",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center
@@ -598,7 +598,7 @@ fun WebsiteTabContent(ipAddress: String, port: Int) {
                     text = "1. Make sure you're connected to the Wi-Fi network above\n" +
                             "2. Open a web browser on your device\n" +
                             "3. Visit the URL above or scan the QR code\n" +
-                            "4. Tap 'Download BitChat'\n" +
+                            "4. Tap 'Download BluChat'\n" +
                             "5. Install the downloaded APK",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)

@@ -805,10 +805,16 @@ class ChatViewModel(
     // MARK: - Channel Management (delegated)
     
     fun joinChannel(channel: String, password: String? = null): Boolean {
+        selectGroup(null)
+        state.setSelectedPrivateChatPeer(null)
         return channelManager.joinChannel(channel, password, mesh.myPeerID)
     }
     
     fun switchToChannel(channel: String?) {
+        if (channel != null) {
+            selectGroup(null)
+            state.setSelectedPrivateChatPeer(null)
+        }
         channelManager.switchToChannel(channel)
     }
     
@@ -820,6 +826,8 @@ class ChatViewModel(
     // MARK: - Private Chat Management (delegated)
     
     suspend fun startPrivateChat(peerID: String) {
+        selectGroup(null)
+        state.setCurrentChannel(null)
         // For geohash conversation keys, ensure DM subscription is active
         if (peerID.startsWith("nostr_")) {
             ensureGeohashDMSubscriptionIfNeeded(peerID)

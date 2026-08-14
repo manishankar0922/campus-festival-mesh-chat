@@ -1016,9 +1016,9 @@ private fun ChatDialogs(
     }
 
     if (showInviteFriendsSheet && selectedGroup != null) {
-        val nearbyPeerList = connectedPeers
-            .filter { it != viewModel.myPeerID }
-            .map { peerID -> peerID to (viewModel.getPeerNickname(peerID) ?: peerID) }
+        val knownNicknames by viewModel.peerNicknames.collectAsStateWithLifecycle()
+        val allKnownPeerIds = (connectedPeers + knownNicknames.keys).distinct().filter { it != viewModel.myPeerID }
+        val nearbyPeerList = allKnownPeerIds.map { peerID -> peerID to (viewModel.getPeerNickname(peerID) ?: peerID) }
 
         InviteFriendsSheet(
             isPresented = showInviteFriendsSheet,
